@@ -1,17 +1,27 @@
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+import type { ProcessingProgress } from '@/lib/ffmpeg'
+
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
 
 interface DownloadBannerProps {
-  downloadUrl: string
-  filename: string
+  processing: boolean
+  processingProgress: ProcessingProgress | null
+  downloadUrl: string | null
+  fileName: string | null
   onDiscard: () => void
 }
 
-export function DownloadBanner({ downloadUrl, filename, onDiscard }: DownloadBannerProps) {
+export function DownloadBanner({
+  processing,
+  processingProgress,
+  downloadUrl,
+  fileName,
+  onDiscard,
+}: DownloadBannerProps) {
   function handleDownload() {
-    if (!downloadUrl || !filename) return
+    if (!downloadUrl || !fileName) return
     const a = document.createElement('a')
     a.href = downloadUrl
-    a.download = filename
+    a.download = fileName
     a.style.display = 'none'
     document.body.appendChild(a)
     a.click()
@@ -19,83 +29,106 @@ export function DownloadBanner({ downloadUrl, filename, onDiscard }: DownloadBan
   }
 
   return (
-    <div style={styles.banner}>
-      <span style={styles.title}>Gravação concluída!</span>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 50,
+      background: processing
+        ? 'rgba(20, 20, 30, 0.97)'
+        : 'rgba(22, 101, 52, 0.92)',
+      backdropFilter: 'blur(8px)',
+      padding: '16px 20px',
+      paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '10px',
+    }}>
 
-      <button onClick={handleDownload} style={styles.downloadBtn}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-        {filename}
-      </button>
-      {isIOS && <span style={styles.hint}>Segure o vídeo e toque em "Salvar"</span>}
+      {processing ? (
+        <>
+          <p style={{ fontSize: '14px', fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>
+            {processingProgress?.message ?? 'Processando vídeo...'}
+          </p>
 
-      <button onClick={onDiscard} style={styles.discardBtn}>
-        Descartar e gravar novamente
-      </button>
+          {/* Barra de progresso */}
+          <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: '99px', height: '4px', overflow: 'hidden', width: '100%', maxWidth: '320px' }}>
+            <div style={{
+              height: '100%',
+              borderRadius: '99px',
+              background: '#a9a3f0',
+              width: `${processingProgress?.progress ?? 0}%`,
+              transition: 'width 0.3s ease',
+            }} />
+          </div>
+
+          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
+            Melhorando qualidade de áudio e vídeo...
+          </p>
+        </>
+      ) : (
+        <>
+          <span style={{ fontWeight: 600, fontSize: '1rem', color: '#bbf7d0' }}>
+            ✓ Gravação concluída e processada!
+          </span>
+
+          <div style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '400px' }}>
+            <button
+              onClick={handleDownload}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                minHeight: '44px',
+                borderRadius: '24px',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: '#fff',
+                fontSize: '0.85rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {fileName ?? 'Baixar vídeo'}
+            </button>
+
+            <button
+              onClick={onDiscard}
+              style={{
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                color: '#86efac',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                minHeight: '44px',
+              }}
+            >
+              Gravar novamente
+            </button>
+          </div>
+
+          {isIOS && (
+            <p style={{ fontSize: '0.78rem', color: '#86efac' }}>
+              No iPhone: segure o vídeo e toque em "Salvar no dispositivo"
+            </p>
+          )}
+        </>
+      )}
     </div>
   )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  banner: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '10px',
-    padding: '16px 20px',
-    background: 'rgba(22, 101, 52, 0.88)',
-    backdropFilter: 'blur(8px)',
-    zIndex: 40,
-    animation: 'fadeIn 0.3s ease',
-  },
-  title: {
-    fontWeight: 600,
-    fontSize: '1rem',
-    color: '#bbf7d0',
-  },
-  downloadBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '10px 20px',
-    minHeight: '44px',
-    borderRadius: '24px',
-    background: 'rgba(255,255,255,0.15)',
-    border: '1px solid rgba(255,255,255,0.3)',
-    color: '#fff',
-    fontSize: '0.85rem',
-    fontWeight: 500,
-    textDecoration: 'none',
-    maxWidth: '90vw',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  iosHint: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  hint: {
-    fontSize: '0.78rem',
-    color: '#86efac',
-  },
-  discardBtn: {
-    background: 'none',
-    border: 'none',
-    color: '#86efac',
-    fontSize: '0.8rem',
-    cursor: 'pointer',
-    textDecoration: 'underline',
-    padding: '4px',
-    minHeight: '44px',
-  },
 }

@@ -16,6 +16,7 @@ interface ScriptOption {
 interface ControlsProps {
   isPlaying: boolean
   isRecording: boolean
+  processing: boolean
   downloadUrl: string | null
   speed: number
   fontSize: number
@@ -35,6 +36,7 @@ interface ControlsProps {
 export function Controls({
   isPlaying,
   isRecording,
+  processing,
   downloadUrl,
   speed,
   fontSize,
@@ -156,10 +158,13 @@ export function Controls({
         {/* Record / Stop */}
         <button
           onClick={onToggleRecord}
+          disabled={processing}
           style={{
             ...styles.primaryBtn,
             background: isRecording ? 'rgba(229,62,62,0.25)' : 'rgba(255,255,255,0.1)',
             border: isRecording ? '1px solid rgba(229,62,62,0.6)' : '1px solid transparent',
+            opacity: processing ? 0.4 : 1,
+            cursor: processing ? 'not-allowed' : 'pointer',
           }}
           title="Gravar (R)"
         >

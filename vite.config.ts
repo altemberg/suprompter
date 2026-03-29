@@ -13,5 +13,9 @@ export default defineConfig({
   envPrefix: ['VITE_', 'OPENROUTER_', 'SUPABASE_'],
   server: {
     allowedHosts: true,
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
   },
 })

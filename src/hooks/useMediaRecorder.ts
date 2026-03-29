@@ -1,30 +1,28 @@
 import { useState, useRef, useCallback } from 'react'
+import { processVideo, type ProcessingProgress } from '@/lib/ffmpeg'
 
 interface UseMediaRecorderReturn {
   isRecording: boolean
   downloadUrl: string | null
-  filename: string | null
+  fileName: string | null
+  processing: boolean
+  processingProgress: ProcessingProgress | null
   startRecording: () => void
   stopRecording: () => void
   clearRecording: () => void
 }
 
-function getSupportedFormat(): { mimeType: string; ext: string } {
-  const candidates = [
-    { mimeType: 'video/mp4;codecs=avc1,mp4a.40.2', ext: 'mp4' },
-    { mimeType: 'video/mp4;codecs=h264,aac', ext: 'mp4' },
-    { mimeType: 'video/mp4', ext: 'mp4' },
-    { mimeType: 'video/webm;codecs=vp9,opus', ext: 'webm' },
-    { mimeType: 'video/webm;codecs=vp8,opus', ext: 'webm' },
-    { mimeType: 'video/webm', ext: 'webm' },
+function getSupportedMimeType(): string {
+  const types = [
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+    'video/mp4',
   ]
-  for (const c of candidates) {
-    if (MediaRecorder.isTypeSupported(c.mimeType)) return c
-  }
-  return { mimeType: '', ext: 'webm' }
+  return types.find(t => MediaRecorder.isTypeSupported(t)) ?? ''
 }
 
-function generateFilename(ext: string, scriptTitle?: string): string {
+function generateFileName(scriptTitle?: string): string {
   const safeTitle = (scriptTitle || 'gravacao')
     .toLowerCase()
     .normalize('NFD')
@@ -38,15 +36,21 @@ function generateFilename(ext: string, scriptTitle?: string): string {
   const date = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`
   const time = `${pad(now.getHours())}-${pad(now.getMinutes())}`
 
-  return `${safeTitle}_${date}_${time}.${ext}`
+  return `${safeTitle}_${date}_${time}.mp4`   // sempre .mp4 — FFmpeg converte
 }
 
-export function useMediaRecorder(canvasStream: MediaStream | null, scriptTitle?: string): UseMediaRecorderReturn {
+export function useMediaRecorder(
+  canvasStream: MediaStream | null,
+  scriptTitle?: string
+): UseMediaRecorderReturn {
   const [isRecording, setIsRecording] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
-  const [filename, setFilename] = useState<string | null>(null)
+  const [fileName, setFileName] = useState<string | null>(null)
+  const [processing, setProcessing] = useState(false)
+  const [processingProgress, setProcessingProgress] = useState<ProcessingProgress | null>(null)
+
   const recorderRef = useRef<MediaRecorder | null>(null)
-  const chunksRef = useRef<Blob[]>([])
+  const chunksRef = useRef<BlobPart[]>([])
   const prevUrlRef = useRef<string | null>(null)
   const scriptTitleRef = useRef(scriptTitle)
   scriptTitleRef.current = scriptTitle
@@ -59,33 +63,61 @@ export function useMediaRecorder(canvasStream: MediaStream | null, scriptTitle?:
       prevUrlRef.current = null
     }
     setDownloadUrl(null)
-    setFilename(null)
+    setFileName(null)
+    setProcessingProgress(null)
     chunksRef.current = []
 
-    const { mimeType, ext } = getSupportedFormat()
-    const recorderOptions: MediaRecorderOptions = {
-      videoBitsPerSecond: 8_000_000,  // 8 Mbps — alta qualidade
-      audioBitsPerSecond: 128_000,    // 128 kbps
-    }
-    if (mimeType) recorderOptions.mimeType = mimeType
-    const recorder = new MediaRecorder(canvasStream, recorderOptions)
+    const mimeType = getSupportedMimeType()
+    const recorder = new MediaRecorder(canvasStream, {
+      ...(mimeType ? { mimeType } : {}),
+      videoBitsPerSecond: 8_000_000,
+      audioBitsPerSecond: 128_000,
+    })
     recorderRef.current = recorder
 
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data)
     }
 
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: mimeType || 'video/webm' })
-      const url = URL.createObjectURL(blob)
-      const name = generateFilename(ext, scriptTitleRef.current)
-      prevUrlRef.current = url
-      setDownloadUrl(url)
-      setFilename(name)
-      setIsRecording(false)
+    recorder.onstop = async () => {
+      const rawBlob = new Blob(chunksRef.current, { type: mimeType || 'video/webm' })
+
+      setProcessing(true)
+      setProcessingProgress({ stage: 'loading', progress: 0, message: 'Carregando processador...' })
+
+      try {
+        const processedBlob = await processVideo(
+          rawBlob,
+          mimeType || 'video/webm',
+          (p) => setProcessingProgress(p)
+        )
+
+        const url = URL.createObjectURL(processedBlob)
+        const name = generateFileName(scriptTitleRef.current)
+        prevUrlRef.current = url
+        setDownloadUrl(url)
+        setFileName(name)
+      } catch (err) {
+        console.error('Erro no processamento FFmpeg:', err)
+
+        // Fallback: entrega o arquivo bruto se FFmpeg falhar
+        const url = URL.createObjectURL(rawBlob)
+        const name = generateFileName(scriptTitleRef.current)
+        prevUrlRef.current = url
+        setDownloadUrl(url)
+        setFileName(name)
+
+        setProcessingProgress({
+          stage: 'error',
+          progress: 0,
+          message: 'Processamento falhou — usando arquivo original.',
+        })
+      } finally {
+        setProcessing(false)
+      }
     }
 
-    recorder.start(100)
+    recorder.start(1000)   // coleta chunks a cada 1s
     setIsRecording(true)
   }, [canvasStream])
 
@@ -93,6 +125,7 @@ export function useMediaRecorder(canvasStream: MediaStream | null, scriptTitle?:
     if (recorderRef.current && recorderRef.current.state !== 'inactive') {
       recorderRef.current.stop()
     }
+    setIsRecording(false)
   }, [])
 
   const clearRecording = useCallback(() => {
@@ -101,8 +134,19 @@ export function useMediaRecorder(canvasStream: MediaStream | null, scriptTitle?:
       prevUrlRef.current = null
     }
     setDownloadUrl(null)
-    setFilename(null)
+    setFileName(null)
+    setProcessingProgress(null)
+    chunksRef.current = []
   }, [])
 
-  return { isRecording, downloadUrl, filename, startRecording, stopRecording, clearRecording }
+  return {
+    isRecording,
+    downloadUrl,
+    fileName,
+    processing,
+    processingProgress,
+    startRecording,
+    stopRecording,
+    clearRecording,
+  }
 }
