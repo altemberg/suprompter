@@ -14,11 +14,14 @@ interface UseMediaRecorderReturn {
 }
 
 function getSupportedMimeType(): string {
+  // Prioriza mp4 nativo (especialmente para iOS/Safari) para que 
+  // o fallback seja um MP4 perfeitamente iteroperável.
   const types = [
+    'video/mp4;codecs=avc1',
+    'video/mp4',
     'video/webm;codecs=vp9,opus',
     'video/webm;codecs=vp8,opus',
     'video/webm',
-    'video/mp4',
   ]
   return types.find(t => MediaRecorder.isTypeSupported(t)) ?? ''
 }
