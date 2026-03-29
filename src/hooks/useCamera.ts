@@ -23,6 +23,8 @@ export function useCamera(): UseCameraReturn {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animFrameRef = useRef<number>(0)
   const formatRef = useRef<CameraFormat>('reels')
+  // Ref para cleanup confiável sem stale closure
+  const streamRef = useRef<MediaStream | null>(null)
 
   // Loop de desenho no canvas
   const startDrawLoop = useCallback(() => {
@@ -83,23 +85,30 @@ export function useCamera(): UseCameraReturn {
     setError(null)
     formatRef.current = format
 
+    // Define dimensões do canvas antes do captureStream
+    const canvas = canvasRef.current
+    if (canvas) {
+      canvas.width = format === 'reels' ? 1080 : 1920
+      canvas.height = format === 'reels' ? 1920 : 1080
+    }
+
     try {
       const rawStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          sampleRate: 48000,
+          sampleRate: { ideal: 48000 },
           channelCount: 1,
         },
         video: {
           facingMode: 'user',
-          frameRate: { ideal: 30, max: 60 },
-          aspectRatio: format === 'reels'
-            ? { ideal: 9 / 16 }
-            : { ideal: 16 / 9 },
+          frameRate: { ideal: 30 },
+          width: { ideal: format === 'reels' ? 1080 : 1920 },
+          height: { ideal: format === 'reels' ? 1920 : 1080 },
         },
       })
 
+      streamRef.current = rawStream
       setStream(rawStream)
 
       if (videoRef.current) {
@@ -109,7 +118,6 @@ export function useCamera(): UseCameraReturn {
 
       startDrawLoop()
 
-      const canvas = canvasRef.current
       if (canvas) {
         const audioTracks = rawStream.getAudioTracks()
         const canvasVideoStream = canvas.captureStream(30)
@@ -136,25 +144,24 @@ export function useCamera(): UseCameraReturn {
   const stopCamera = useCallback(() => {
     cancelAnimationFrame(animFrameRef.current)
 
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop())
-      setStream(null)
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop())
+      streamRef.current = null
     }
-
+    setStream(null)
     setCanvasStream(null)
 
     if (videoRef.current) {
       videoRef.current.srcObject = null
     }
-  }, [stream])
+  }, []) // sem dependências — usa ref, nunca fica stale
 
   // Cleanup ao desmontar
   useEffect(() => {
     return () => {
       cancelAnimationFrame(animFrameRef.current)
-      stream?.getTracks().forEach(t => t.stop())
+      streamRef.current?.getTracks().forEach(t => t.stop())
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return { stream, canvasStream, videoRef, canvasRef, error, loading, startCamera, stopCamera }
