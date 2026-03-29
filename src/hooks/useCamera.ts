@@ -57,7 +57,8 @@ export function useCamera(): UseCameraReturn {
         ctx.translate(canvas.width / 2, canvas.height / 2)
         // Usa Math.max para fazer um center crop (object-fit: cover) sem girar
         const scale = Math.max(canvas.width / vw, canvas.height / vh)
-        ctx.scale(scale, scale)
+        // Inverte horizontalmente (scale em X negativo) para remover o espelhamento
+        ctx.scale(-scale, scale)
         ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh)
         ctx.restore()
       } else {
@@ -65,12 +66,15 @@ export function useCamera(): UseCameraReturn {
         if (canvas.width !== 1920) canvas.width = 1920
         if (canvas.height !== 1080) canvas.height = 1080
 
+        ctx.save()
+        ctx.translate(canvas.width / 2, canvas.height / 2)
         const scale = Math.min(canvas.width / vw, canvas.height / vh)
         const sw = vw * scale
         const sh = vh * scale
-        const sx = (canvas.width - sw) / 2
-        const sy = (canvas.height - sh) / 2
-        ctx.drawImage(video, sx, sy, sw, sh)
+        // Inverte horizontalmente
+        ctx.scale(-1, 1)
+        ctx.drawImage(video, -sw / 2, -sh / 2, sw, sh)
+        ctx.restore()
       }
 
       animFrameRef.current = requestAnimationFrame(draw)
