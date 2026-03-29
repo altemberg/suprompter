@@ -55,8 +55,7 @@ export function useCamera(): UseCameraReturn {
       
         ctx.save()
         ctx.translate(canvas.width / 2, canvas.height / 2)
-        ctx.rotate(-Math.PI / 2)          // anti-horário
-        ctx.scale(-1, 1)                  // espelha horizontalmente (câmera frontal)
+        ctx.rotate(Math.PI / 2)
         const scale = Math.min(canvas.width / vh, canvas.height / vw)
         ctx.scale(scale, scale)
         ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh)
