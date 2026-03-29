@@ -44,33 +44,46 @@ export function useCamera(): UseCameraReturn {
       const isReels = formatRef.current === 'reels'
       const vw = video.videoWidth
       const vh = video.videoHeight
+      if (!vw || !vh) {
+        animFrameRef.current = requestAnimationFrame(draw)
+        return
+      }
 
       if (isReels) {
-        // Retrato: canvas 1080x1920, vídeo chega em paisagem → rotacionar 90°
-        canvas.width = 1080
-        canvas.height = 1920
+        // Garante dimensões sem resetar o contexto desnecessariamente
+        if (canvas.width !== 1080) canvas.width = 1080
+        if (canvas.height !== 1920) canvas.height = 1920
 
-        ctx.save()
-        ctx.translate(canvas.width / 2, canvas.height / 2)
-        ctx.rotate(Math.PI / 2) // 90° no sentido horário
+        const isLandscapeSource = vw > vh
 
-        // Escalar para preencher o canvas após a rotação
-        const scale = Math.max(canvas.width / vh, canvas.height / vw)
-        ctx.scale(scale, scale)
-
-        ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh)
-        ctx.restore()
+        if (isLandscapeSource) {
+          // Câmera entrega landscape (ex: 1280×720) → rotacionar 90° para portrait
+          ctx.save()
+          ctx.translate(canvas.width / 2, canvas.height / 2)
+          ctx.rotate(Math.PI / 2)
+          const scale = Math.max(canvas.width / vh, canvas.height / vw)
+          ctx.scale(scale, scale)
+          ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh)
+          ctx.restore()
+        } else {
+          // Câmera já entrega portrait (alguns iOS/Android) → desenha direto
+          const scale = Math.max(canvas.width / vw, canvas.height / vh)
+          const sw = vw * scale
+          const sh = vh * scale
+          const sx = (canvas.width - sw) / 2
+          const sy = (canvas.height - sh) / 2
+          ctx.drawImage(video, sx, sy, sw, sh)
+        }
       } else {
-        // Paisagem: canvas 1920x1080, desenha direto sem rotação
-        canvas.width = 1920
-        canvas.height = 1080
+        // Paisagem: canvas 1920x1080
+        if (canvas.width !== 1920) canvas.width = 1920
+        if (canvas.height !== 1080) canvas.height = 1080
 
         const scale = Math.max(canvas.width / vw, canvas.height / vh)
         const sw = vw * scale
         const sh = vh * scale
         const sx = (canvas.width - sw) / 2
         const sy = (canvas.height - sh) / 2
-
         ctx.drawImage(video, sx, sy, sw, sh)
       }
 

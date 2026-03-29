@@ -192,15 +192,12 @@ export function TeleprompterPage() {
       onMouseMove={handleActivity}
       onTouchStart={handleActivity}
     >
-      {/* Canvas invisível — rotaciona e grava */}
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
+      {/* Video invisível — alimenta o canvas */}
+      <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
 
-      {/* Preview da câmera — só visual */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
+      {/* Canvas — preview visual (já com frame correto) e fonte da gravação */}
+      <canvas
+        ref={canvasRef}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', background: '#000', transform: 'scaleX(-1)' }}
       />
 
