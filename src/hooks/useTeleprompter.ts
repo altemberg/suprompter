@@ -27,7 +27,7 @@ export function useTeleprompter(speed: number): UseTeleprompterReturn {
     const el = scrollRef.current
     if (!el) return
 
-    const pixelsPerFrame = speedRef.current * 0.5
+    const pixelsPerFrame = speedRef.current * 1.0
 
     el.scrollTop += pixelsPerFrame
 

@@ -11,7 +11,7 @@ interface TeleprompterStore {
 export const useTeleprompterStore = create<TeleprompterStore>()(
   persist(
     (set) => ({
-      speed: 4,
+      speed: 2.5,
       fontSize: 40,
       setSpeed: (speed) => set({ speed }),
       setFontSize: (fontSize) => set({ fontSize }),

@@ -1,12 +1,7 @@
 import { useState, useRef } from 'react'
 import type { Format } from '@/types'
-import { generateScript, improveScript, suggestHooksAndCTAs } from '@/lib/claude'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent } from '@/components/ui/card'
-import { Sparkles, Wand2, Zap, Copy, CheckCircle } from 'lucide-react'
+import { generateScript, improveScript, suggestHooksAndCTAs, applyHookOrCTA } from '@/lib/claude'
+import { Sparkles, Wand2, Zap, Copy, CheckCircle, ArrowRight } from 'lucide-react'
 
 interface AIAssistantProps {
   currentScript: string
@@ -19,30 +14,100 @@ interface HooksData {
   ctas: string[]
 }
 
+type Tab = 'generate' | 'improve' | 'hooks'
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  background: 'var(--bg-page)',
+  border: '0.5px solid rgba(255,255,255,0.08)',
+  borderRadius: '8px',
+  padding: '8px 12px',
+  fontSize: '13px',
+  color: 'rgba(255,255,255,0.85)',
+  outline: 'none',
+}
+
+const textareaStyle: React.CSSProperties = {
+  ...inputStyle,
+  resize: 'none',
+  lineHeight: 1.6,
+  minHeight: '80px',
+}
+
+function ApplyButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+        padding: '10px 16px',
+        background: 'rgba(29,158,117,0.2)',
+        border: '0.5px solid rgba(29,158,117,0.5)',
+        borderRadius: '8px',
+        fontSize: '13.5px', fontWeight: 600,
+        color: '#4ecda4',
+        cursor: 'pointer',
+        transition: 'background 0.15s',
+      }}
+    >
+      <ArrowRight size={15} strokeWidth={2} />
+      Aplicar ao editor
+    </button>
+  )
+}
+
+function PrimaryButton({ onClick, disabled, children }: { onClick: () => void; disabled: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        width: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+        padding: '8px 16px',
+        background: 'var(--accent-bg)',
+        border: '0.5px solid var(--accent-border)',
+        borderRadius: '8px',
+        fontSize: '13px', fontWeight: 500,
+        color: 'var(--accent-light)',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
+        transition: 'background 0.15s',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function AIAssistant({ currentScript, format, onApply }: AIAssistantProps) {
-  // Estado da aba Gerar
+  const [activeTab, setActiveTab] = useState<Tab>('generate')
+
+  // Gerar
   const [genTopic, setGenTopic] = useState('')
   const [genAudience, setGenAudience] = useState('')
   const [genDuration, setGenDuration] = useState('60')
+  const [genCustomMinutes, setGenCustomMinutes] = useState('')
   const [genTone, setGenTone] = useState('Descontraído')
   const [genResult, setGenResult] = useState('')
   const [genLoading, setGenLoading] = useState(false)
   const [genError, setGenError] = useState('')
 
-  // Estado da aba Melhorar
+  // Melhorar
   const [improveInstruction, setImproveInstruction] = useState('')
   const [improveResult, setImproveResult] = useState('')
   const [improveLoading, setImproveLoading] = useState(false)
   const [improveError, setImproveError] = useState('')
 
-  // Estado da aba Ganchos
+  // Ganchos
   const [hooksData, setHooksData] = useState<HooksData | null>(null)
   const [hooksLoading, setHooksLoading] = useState(false)
   const [hooksError, setHooksError] = useState('')
   const hooksRawRef = useRef('')
 
-  // Estados de cópia
   const [copiedItem, setCopiedItem] = useState<string | null>(null)
+  const [applyingItem, setApplyingItem] = useState<string | null>(null)
 
   async function handleGenerate() {
     if (!genTopic.trim()) return
@@ -50,8 +115,11 @@ export function AIAssistant({ currentScript, format, onApply }: AIAssistantProps
     setGenResult('')
     setGenError('')
     try {
+      const durationSeconds = genDuration === 'custom'
+        ? Math.max(30, parseInt(genCustomMinutes || '1') * 60)
+        : parseInt(genDuration)
       await generateScript(
-        { topic: genTopic, format, tone: genTone, duration: parseInt(genDuration), targetAudience: genAudience },
+        { topic: genTopic, format, tone: genTone, duration: durationSeconds, targetAudience: genAudience },
         (chunk) => setGenResult((prev) => prev + chunk)
       )
     } catch (e) {
@@ -89,12 +157,30 @@ export function AIAssistant({ currentScript, format, onApply }: AIAssistantProps
         { scriptContent: currentScript, format },
         (chunk) => { hooksRawRef.current += chunk }
       )
-      const parsed = JSON.parse(hooksRawRef.current) as HooksData
+      const raw = hooksRawRef.current.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+      const parsed = JSON.parse(raw) as HooksData
       setHooksData(parsed)
     } catch (e) {
       setHooksError(e instanceof Error ? e.message : 'Erro ao gerar sugestões')
     } finally {
       setHooksLoading(false)
+    }
+  }
+
+  async function handleApplyHookOrCTA(text: string, type: 'hook' | 'cta') {
+    if (!currentScript.trim() || applyingItem) return
+    setApplyingItem(text)
+    let result = ''
+    try {
+      await applyHookOrCTA(
+        { currentScript, text, type },
+        (chunk) => { result += chunk }
+      )
+      onApply(result)
+    } catch (e) {
+      console.error('Erro ao aplicar:', e)
+    } finally {
+      setApplyingItem(null)
     }
   }
 
@@ -104,171 +190,195 @@ export function AIAssistant({ currentScript, format, onApply }: AIAssistantProps
     setTimeout(() => setCopiedItem(null), 2000)
   }
 
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'generate', label: 'Gerar' },
+    { key: 'improve', label: 'Melhorar' },
+    { key: 'hooks', label: 'Ganchos' },
+  ]
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="mb-4">
-        <h2 className="font-semibold flex items-center gap-2">
-          <Sparkles className="size-4" /> Assistente IA
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '14px', fontWeight: 500, color: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '2px' }}>
+          <Sparkles size={14} strokeWidth={1.8} style={{ color: 'var(--accent-light)' }} />
+          Assistente IA
         </h2>
-        <p className="text-sm text-muted-foreground">Claude Sonnet</p>
+        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)' }}>Claude Sonnet</p>
       </div>
 
-      <Tabs defaultValue="generate" className="flex-1 flex flex-col">
-        <TabsList className="grid grid-cols-3 w-full">
-          <TabsTrigger value="generate" className="text-xs">Gerar</TabsTrigger>
-          <TabsTrigger value="improve" className="text-xs">Melhorar</TabsTrigger>
-          <TabsTrigger value="hooks" className="text-xs">Ganchos</TabsTrigger>
-        </TabsList>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', background: 'var(--bg-page)', borderRadius: '8px', padding: '3px' }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              flex: 1, padding: '6px', borderRadius: '6px',
+              fontSize: '12.5px', fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'background 0.15s, color 0.15s',
+              border: 'none',
+              ...(activeTab === tab.key
+                ? { background: 'var(--bg-surface)', color: 'rgba(255,255,255,0.85)' }
+                : { background: 'transparent', color: 'rgba(255,255,255,0.35)' }
+              ),
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value="generate" className="flex-1 space-y-3 mt-4">
-          <div className="space-y-2">
-            <Input
+      {/* Conteúdo das tabs */}
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+        {activeTab === 'generate' && (
+          <>
+            <input
               placeholder="Tema / assunto"
               value={genTopic}
               onChange={(e) => setGenTopic(e.target.value)}
+              style={inputStyle}
             />
-            <Input
+            <input
               placeholder="Público-alvo"
               value={genAudience}
               onChange={(e) => setGenAudience(e.target.value)}
+              style={inputStyle}
             />
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-                value={genDuration}
-                onChange={(e) => setGenDuration(e.target.value)}
-              >
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <select value={genDuration} onChange={(e) => setGenDuration(e.target.value)} style={inputStyle}>
                 <option value="30">30 segundos</option>
-                <option value="60">60 segundos</option>
-                <option value="90">90 segundos</option>
+                <option value="60">1 minuto</option>
+                <option value="90">1 min 30s</option>
+                <option value="120">2 minutos</option>
                 <option value="180">3 minutos</option>
+                <option value="custom">Personalizado</option>
               </select>
-              <select
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-                value={genTone}
-                onChange={(e) => setGenTone(e.target.value)}
-              >
+              <select value={genTone} onChange={(e) => setGenTone(e.target.value)} style={inputStyle}>
                 {['Descontraído', 'Profissional', 'Inspirador', 'Humorístico', 'Educativo'].map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </div>
-          </div>
-
-          <Button className="w-full" onClick={handleGenerate} disabled={genLoading || !genTopic.trim()}>
-            <Wand2 className="size-4 mr-2" />
-            {genLoading ? 'Gerando...' : 'Gerar Roteiro'}
-          </Button>
-
-          {genError && <p className="text-sm text-destructive">{genError}</p>}
-
-          {genResult && (
-            <div className="space-y-2">
-              <Textarea
-                value={genResult}
-                readOnly
-                className="min-h-32 text-sm resize-none"
-              />
-              {!genLoading && (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => onApply(genResult)}>
-                  Aplicar ao editor
-                </Button>
-              )}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="improve" className="flex-1 space-y-3 mt-4">
-          {currentScript && (
-            <div className="rounded-md border p-3 text-sm text-muted-foreground">
-              {currentScript.slice(0, 200)}{currentScript.length > 200 ? '...' : ''}
-            </div>
-          )}
-
-          <Textarea
-            placeholder="O que você quer mudar? Ex: deixa mais direto, adiciona mais energia..."
-            value={improveInstruction}
-            onChange={(e) => setImproveInstruction(e.target.value)}
-            className="min-h-20"
-          />
-
-          <Button
-            className="w-full"
-            onClick={handleImprove}
-            disabled={improveLoading || !improveInstruction.trim() || !currentScript.trim()}
-          >
-            <Zap className="size-4 mr-2" />
-            {improveLoading ? 'Melhorando...' : 'Melhorar'}
-          </Button>
-
-          {improveError && <p className="text-sm text-destructive">{improveError}</p>}
-
-          {improveResult && (
-            <div className="space-y-2">
-              <Textarea
-                value={improveResult}
-                readOnly
-                className="min-h-32 text-sm resize-none"
-              />
-              {!improveLoading && (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => onApply(improveResult)}>
-                  Aplicar ao editor
-                </Button>
-              )}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="hooks" className="flex-1 space-y-3 mt-4">
-          <Button
-            className="w-full"
-            onClick={handleHooks}
-            disabled={hooksLoading || !currentScript.trim()}
-          >
-            <Sparkles className="size-4 mr-2" />
-            {hooksLoading ? 'Gerando...' : 'Gerar sugestões'}
-          </Button>
-
-          {hooksError && <p className="text-sm text-destructive">{hooksError}</p>}
-
-          {hooksData && (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium mb-2">Ganchos de abertura</p>
-                <div className="space-y-2">
-                  {hooksData.hooks.map((hook, i) => (
-                    <Card key={i} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => copyToClipboard(hook)}>
-                      <CardContent className="flex items-start gap-2 p-3">
-                        <p className="text-sm flex-1">{hook}</p>
-                        {copiedItem === hook
-                          ? <CheckCircle className="size-4 text-green-500 shrink-0 mt-0.5" />
-                          : <Copy className="size-4 text-muted-foreground shrink-0 mt-0.5" />
-                        }
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+            {genDuration === 'custom' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  placeholder="Minutos"
+                  value={genCustomMinutes}
+                  onChange={(e) => setGenCustomMinutes(e.target.value)}
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', flexShrink: 0 }}>minutos</span>
               </div>
-              <div>
-                <p className="text-sm font-medium mb-2">CTAs de fechamento</p>
-                <div className="space-y-2">
-                  {hooksData.ctas.map((cta, i) => (
-                    <Card key={i} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => copyToClipboard(cta)}>
-                      <CardContent className="flex items-start gap-2 p-3">
-                        <p className="text-sm flex-1">{cta}</p>
-                        {copiedItem === cta
-                          ? <CheckCircle className="size-4 text-green-500 shrink-0 mt-0.5" />
-                          : <Copy className="size-4 text-muted-foreground shrink-0 mt-0.5" />
-                        }
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+            )}
+
+            <PrimaryButton onClick={handleGenerate} disabled={genLoading || !genTopic.trim()}>
+              <Wand2 size={14} strokeWidth={1.8} />
+              {genLoading ? 'Gerando...' : 'Gerar Roteiro'}
+            </PrimaryButton>
+
+            {genError && <p style={{ fontSize: '12px', color: '#f87171' }}>{genError}</p>}
+
+            {genResult && (
+              <>
+                <textarea value={genResult} readOnly style={{ ...textareaStyle, minHeight: '120px' }} />
+                {!genLoading && <ApplyButton onClick={() => onApply(genResult)} />}
+              </>
+            )}
+          </>
+        )}
+
+        {activeTab === 'improve' && (
+          <>
+            {currentScript && (
+              <div style={{ background: 'var(--bg-page)', border: '0.5px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
+                {currentScript.slice(0, 200)}{currentScript.length > 200 ? '...' : ''}
               </div>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+            )}
+            <textarea
+              placeholder="O que você quer mudar? Ex: deixa mais direto, adiciona mais energia..."
+              value={improveInstruction}
+              onChange={(e) => setImproveInstruction(e.target.value)}
+              style={textareaStyle}
+            />
+            <PrimaryButton
+              onClick={handleImprove}
+              disabled={improveLoading || !improveInstruction.trim() || !currentScript.trim()}
+            >
+              <Zap size={14} strokeWidth={1.8} />
+              {improveLoading ? 'Melhorando...' : 'Melhorar'}
+            </PrimaryButton>
+
+            {improveError && <p style={{ fontSize: '12px', color: '#f87171' }}>{improveError}</p>}
+
+            {improveResult && (
+              <>
+                <textarea value={improveResult} readOnly style={{ ...textareaStyle, minHeight: '120px' }} />
+                {!improveLoading && <ApplyButton onClick={() => onApply(improveResult)} />}
+              </>
+            )}
+          </>
+        )}
+
+        {activeTab === 'hooks' && (
+          <>
+            <PrimaryButton onClick={handleHooks} disabled={hooksLoading || !currentScript.trim()}>
+              <Sparkles size={14} strokeWidth={1.8} />
+              {hooksLoading ? 'Gerando...' : 'Gerar sugestões'}
+            </PrimaryButton>
+
+            {hooksError && <p style={{ fontSize: '12px', color: '#f87171' }}>{hooksError}</p>}
+
+            {hooksData && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {([{ label: 'Ganchos de abertura', items: hooksData.hooks, type: 'hook' }, { label: 'CTAs de fechamento', items: hooksData.ctas, type: 'cta' }] as const).map(({ label, items, type }) => (
+                  <div key={label}>
+                    <p style={{ fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px' }}>{label}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {items.map((item, i) => (
+                        <div
+                          key={i}
+                          style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 12px', background: 'var(--bg-page)', border: '0.5px solid rgba(255,255,255,0.07)', borderRadius: '8px' }}
+                        >
+                          <p style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.75)', flex: 1, lineHeight: 1.5 }}>{item}</p>
+                          <div style={{ display: 'flex', gap: '8px', flexShrink: 0, marginTop: '2px' }}>
+                            <button
+                              onClick={() => copyToClipboard(item)}
+                              title="Copiar"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}
+                            >
+                              {copiedItem === item
+                                ? <CheckCircle size={14} style={{ color: 'var(--teal-light)' }} />
+                                : <Copy size={14} style={{ color: 'rgba(255,255,255,0.25)' }} />
+                              }
+                            </button>
+                            <button
+                              onClick={() => handleApplyHookOrCTA(item, type)}
+                              disabled={!!applyingItem || !currentScript.trim()}
+                              title={!currentScript.trim() ? 'Escreva um roteiro primeiro' : 'Aplicar ao roteiro com IA'}
+                              style={{ background: 'none', border: 'none', cursor: (applyingItem || !currentScript.trim()) ? 'not-allowed' : 'pointer', padding: 0, display: 'flex', opacity: !currentScript.trim() ? 0.3 : 1 }}
+                            >
+                              {applyingItem === item
+                                ? <span style={{ fontSize: '10px', color: 'rgba(29,158,117,0.7)' }}>...</span>
+                                : <ArrowRight size={14} style={{ color: 'rgba(29,158,117,0.7)' }} />
+                              }
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

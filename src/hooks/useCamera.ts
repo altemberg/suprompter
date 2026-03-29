@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import type { Format } from '@/types'
 
 type CameraError = 'permission-denied' | 'not-found' | 'not-supported' | 'insecure-context' | null
 
@@ -6,7 +7,7 @@ interface UseCameraReturn {
   stream: MediaStream | null
   error: CameraError
   isLoading: boolean
-  startCamera: () => Promise<void>
+  startCamera: (format?: Format) => Promise<void>
   stopCamera: () => void
 }
 
@@ -16,7 +17,7 @@ export function useCamera(): UseCameraReturn {
   const [isLoading, setIsLoading] = useState(false)
   const streamRef = useRef<MediaStream | null>(null)
 
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (format: Format = 'reels') => {
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
       setError('insecure-context')
       return
@@ -30,14 +31,14 @@ export function useCamera(): UseCameraReturn {
     setIsLoading(true)
     setError(null)
 
+    // Reels/Stories: retrato 9:16 — YouTube: paisagem 16:9
+    const videoConstraints = format === 'reels'
+      ? { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1920 }, frameRate: { ideal: 30 } }
+      : { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }
+
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 30 },
-        },
+        video: videoConstraints,
         audio: {
           echoCancellation: true,
           noiseSuppression: true,

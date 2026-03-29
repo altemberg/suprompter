@@ -7,10 +7,10 @@ import type { Script } from '@/types'
 import { useCamera } from '@/hooks/useCamera'
 import { useMediaRecorder } from '@/hooks/useMediaRecorder'
 import { useTeleprompter } from '@/hooks/useTeleprompter'
-import { Controls } from '@/components/Controls'
-import { ScrollingText } from '@/components/ScrollingText'
-import { ProgressBar } from '@/components/ProgressBar'
-import { DownloadBanner } from '@/components/DownloadBanner'
+import { Controls } from '@/components/teleprompter/Controls'
+import { ScrollingText } from '@/components/teleprompter/ScrollingText'
+import { ProgressBar } from '@/components/teleprompter/ProgressBar'
+import { DownloadBanner } from '@/components/teleprompter/DownloadBanner'
 
 export function TeleprompterPage() {
   const navigate = useNavigate()
@@ -20,6 +20,7 @@ export function TeleprompterPage() {
   const { speed, fontSize, setSpeed, setFontSize } = useTeleprompterStore()
 
   const [script, setScript] = useState<Script | null>(null)
+  const [allScripts, setAllScripts] = useState<Script[]>([])
   const [scriptLoading, setScriptLoading] = useState(!!scriptId)
   const [showControls, setShowControls] = useState(true)
   const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null)
@@ -30,6 +31,19 @@ export function TeleprompterPage() {
   const { stream, error: cameraError, startCamera, stopCamera } = useCamera()
   const { isRecording, downloadUrl, filename, startRecording, stopRecording, clearRecording } = useMediaRecorder(stream)
   const { isPlaying, progress, play, pause, toggle, reset, scrollRef } = useTeleprompter(speed)
+
+  // Carrega todos os roteiros do usuário
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('scripts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setAllScripts(data as Script[])
+      })
+  }, [user])
 
   // Carrega o roteiro se scriptId fornecido
   useEffect(() => {
@@ -47,10 +61,10 @@ export function TeleprompterPage() {
     return () => { cancelled = true }
   }, [scriptId])
 
-  // Inicia câmera ao montar
+  // Inicia câmera ao montar com resolução correta para o formato
   useEffect(() => {
-    startCamera()
-  }, [startCamera])
+    startCamera(script?.format ?? 'reels')
+  }, [startCamera, script?.format])
 
   // Conecta stream ao elemento de vídeo
   useEffect(() => {
@@ -96,11 +110,11 @@ export function TeleprompterPage() {
           break
         case 'ArrowUp':
           e.preventDefault()
-          setSpeed(Math.min(10, speed + 1))
+          setSpeed(Math.min(5, Math.round((speed + 0.5) * 10) / 10))
           break
         case 'ArrowDown':
           e.preventDefault()
-          setSpeed(Math.max(1, speed - 1))
+          setSpeed(Math.max(1, Math.round((speed - 0.5) * 10) / 10))
           break
         case 'Escape':
           handleBack()
@@ -122,10 +136,10 @@ export function TeleprompterPage() {
     pause()
     const duration = recordingStartTime ? (Date.now() - recordingStartTime) / 1000 : 0
 
-    if (scriptId && script && user) {
+    if (script && user) {
       await supabase.from('recordings').insert({
         user_id: user.id,
-        script_id: scriptId,
+        script_id: script.id,
         title: script.title,
         duration_seconds: Math.round(duration),
         format: script.format,
@@ -146,6 +160,14 @@ export function TeleprompterPage() {
     reset()
   }
 
+  function handleSelectScript(id: string) {
+    const found = allScripts.find((s) => s.id === id)
+    if (found) {
+      setScript(found)
+      reset()
+    }
+  }
+
   const scriptText = script?.content ?? ''
 
   if (scriptLoading) {
@@ -164,7 +186,15 @@ export function TeleprompterPage() {
 
   return (
     <div
-      className="relative h-dvh w-full bg-black overflow-hidden"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: '#000',
+        overflow: 'hidden',
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
       onMouseMove={handleActivity}
       onTouchStart={handleActivity}
     >
@@ -174,8 +204,7 @@ export function TeleprompterPage() {
         autoPlay
         playsInline
         muted
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ transform: 'scaleX(-1)' }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
       />
 
       {/* Barra de progresso */}
@@ -208,12 +237,15 @@ export function TeleprompterPage() {
         speed={speed}
         fontSize={fontSize}
         visible={showControls}
+        scripts={allScripts}
+        currentScriptId={script?.id ?? null}
         onTogglePlay={toggle}
         onToggleRecord={handleToggleRecord}
         onReset={reset}
         onReRecord={handleDiscard}
         onSpeedChange={setSpeed}
         onFontSizeChange={setFontSize}
+        onSelectScript={handleSelectScript}
         onBack={handleBack}
       />
     </div>
