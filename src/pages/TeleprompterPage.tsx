@@ -198,7 +198,7 @@ export function TeleprompterPage() {
       {/* Canvas — preview visual (já com frame correto) e fonte da gravação */}
       <canvas
         ref={canvasRef}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', background: '#000', transform: 'scaleX(-1)' }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: '#000' }}
       />
 
       {/* Barra de progresso */}
