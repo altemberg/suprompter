@@ -17,16 +17,6 @@ export function DownloadBanner({
   fileName,
   onDiscard,
 }: DownloadBannerProps) {
-  function handleDownload() {
-    if (!downloadUrl || !fileName) return
-    const a = document.createElement('a')
-    a.href = downloadUrl
-    a.download = fileName
-    a.style.display = 'none'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
 
   return (
     <div style={{
@@ -75,8 +65,9 @@ export function DownloadBanner({
           </span>
 
           <div style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '400px' }}>
-            <button
-              onClick={handleDownload}
+            <a
+              href={downloadUrl || undefined}
+              download={fileName || undefined}
               style={{
                 flex: 1,
                 display: 'flex',
@@ -95,6 +86,7 @@ export function DownloadBanner({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+                textDecoration: 'none',
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -103,7 +95,7 @@ export function DownloadBanner({
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
               {fileName ?? 'Baixar vídeo'}
-            </button>
+            </a>
 
             <button
               onClick={onDiscard}

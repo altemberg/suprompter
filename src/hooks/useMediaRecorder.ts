@@ -23,7 +23,7 @@ function getSupportedMimeType(): string {
   return types.find(t => MediaRecorder.isTypeSupported(t)) ?? ''
 }
 
-function generateFileName(scriptTitle?: string): string {
+function generateFileName(scriptTitle?: string, ext: string = 'mp4'): string {
   const safeTitle = (scriptTitle || 'gravacao')
     .toLowerCase()
     .normalize('NFD')
@@ -37,7 +37,7 @@ function generateFileName(scriptTitle?: string): string {
   const date = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`
   const time = `${pad(now.getHours())}-${pad(now.getMinutes())}`
 
-  return `${safeTitle}_${date}_${time}.mp4`   // sempre .mp4 — FFmpeg converte
+  return `${safeTitle}_${date}_${time}.${ext}`
 }
 
 export function useMediaRecorder(
@@ -102,7 +102,7 @@ export function useMediaRecorder(
         )
 
         const url = URL.createObjectURL(processedBlob)
-        const name = generateFileName(scriptTitleRef.current)
+        const name = generateFileName(scriptTitleRef.current, 'mp4')
         prevUrlRef.current = url
         setDownloadUrl(url)
         setFileName(name)
@@ -111,7 +111,8 @@ export function useMediaRecorder(
 
         // Fallback: entrega o arquivo bruto se FFmpeg falhar
         const url = URL.createObjectURL(rawBlob)
-        const name = generateFileName(scriptTitleRef.current)
+        const ext = (mimeType || '').includes('mp4') ? 'mp4' : 'webm'
+        const name = generateFileName(scriptTitleRef.current, ext)
         prevUrlRef.current = url
         setDownloadUrl(url)
         setFileName(name)
