@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useTeleprompterStore } from '@/stores/useTeleprompterStore'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import type { Script } from '@/types'
 import { useCamera } from '@/hooks/useCamera'
 import { useMediaRecorder } from '@/hooks/useMediaRecorder'
@@ -18,6 +19,7 @@ export function TeleprompterPage() {
   const scriptId = searchParams.get('scriptId')
   const { user } = useAuthStore()
   const { speed, fontSize, setSpeed, setFontSize } = useTeleprompterStore()
+  const isMobile = useIsMobile()
 
   const [script, setScript] = useState<Script | null>(null)
   const [allScripts, setAllScripts] = useState<Script[]>([])
@@ -61,10 +63,10 @@ export function TeleprompterPage() {
     return () => { cancelled = true }
   }, [scriptId])
 
-  // Inicia câmera ao montar com resolução correta para o formato
+  // Mobile sempre retrato (stories), desktop sempre paisagem
   useEffect(() => {
-    startCamera(script?.format ?? 'reels')
-  }, [startCamera, script?.format])
+    startCamera(isMobile ? 'reels' : 'youtube')
+  }, [startCamera, isMobile])
 
   // Conecta stream ao elemento de vídeo
   useEffect(() => {
