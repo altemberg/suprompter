@@ -50,30 +50,19 @@ export function useCamera(): UseCameraReturn {
       }
 
       if (isReels) {
-        // Garante dimensões sem resetar o contexto desnecessariamente
+        // Canvas portrait 1080×1920
         if (canvas.width !== 1080) canvas.width = 1080
         if (canvas.height !== 1920) canvas.height = 1920
 
-        const isLandscapeSource = vw > vh
-
-        if (isLandscapeSource) {
-          // Câmera entrega landscape (ex: 1280×720) → rotacionar 90° para portrait
-          ctx.save()
-          ctx.translate(canvas.width / 2, canvas.height / 2)
-          ctx.rotate(-Math.PI / 2)   // anti-horário — correto para câmera frontal iOS em retrato
-          const scale = Math.min(canvas.width / vh, canvas.height / vw)
-          ctx.scale(scale, scale)
-          ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh)
-          ctx.restore()
-        } else {
-          // Câmera já entrega portrait (alguns iOS/Android) → desenha direto
-          const scale = Math.min(canvas.width / vw, canvas.height / vh)
-          const sw = vw * scale
-          const sh = vh * scale
-          const sx = (canvas.width - sw) / 2
-          const sy = (canvas.height - sh) / 2
-          ctx.drawImage(video, sx, sy, sw, sh)
-        }
+        // Sempre rotaciona: constraints são sempre landscape, portanto sempre precisa de 90°
+        // Math.PI/2 = horário (correto para câmera frontal mobile em retrato)
+        ctx.save()
+        ctx.translate(canvas.width / 2, canvas.height / 2)
+        ctx.rotate(Math.PI / 2)
+        const scale = Math.min(canvas.width / vh, canvas.height / vw)
+        ctx.scale(scale, scale)
+        ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh)
+        ctx.restore()
       } else {
         // Paisagem: canvas 1920x1080
         if (canvas.width !== 1920) canvas.width = 1920
@@ -116,8 +105,10 @@ export function useCamera(): UseCameraReturn {
         video: {
           facingMode: 'user',
           frameRate: { ideal: 30 },
-          width: { ideal: format === 'reels' ? 1080 : 1920 },
-          height: { ideal: format === 'reels' ? 1920 : 1080 },
+          // Sempre landscape — hardware mobile entrega landscape independente do formato
+          // Para reels, o canvas rotaciona para portrait no draw loop
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
         },
       })
 
