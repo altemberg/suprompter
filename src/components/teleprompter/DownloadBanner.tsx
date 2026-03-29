@@ -7,32 +7,30 @@ interface DownloadBannerProps {
 }
 
 export function DownloadBanner({ downloadUrl, filename, onDiscard }: DownloadBannerProps) {
+  function handleDownload() {
+    if (!downloadUrl || !filename) return
+    const a = document.createElement('a')
+    a.href = downloadUrl
+    a.download = filename
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
   return (
     <div style={styles.banner}>
       <span style={styles.title}>Gravação concluída!</span>
 
-      {isIOS ? (
-        <div style={styles.iosHint}>
-          <a href={downloadUrl} target="_blank" rel="noreferrer" style={styles.downloadBtn}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {filename}
-          </a>
-          <span style={styles.hint}>Segure o vídeo e toque em "Salvar"</span>
-        </div>
-      ) : (
-        <a href={downloadUrl} download={filename} style={styles.downloadBtn}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          {filename}
-        </a>
-      )}
+      <button onClick={handleDownload} style={styles.downloadBtn}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        {filename}
+      </button>
+      {isIOS && <span style={styles.hint}>Segure o vídeo e toque em "Salvar"</span>}
 
       <button onClick={onDiscard} style={styles.discardBtn}>
         Descartar e gravar novamente

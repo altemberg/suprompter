@@ -24,23 +24,32 @@ function getSupportedFormat(): { mimeType: string; ext: string } {
   return { mimeType: '', ext: 'webm' }
 }
 
-function generateFilename(ext: string): string {
+function generateFilename(ext: string, scriptTitle?: string): string {
+  const safeTitle = (scriptTitle || 'gravacao')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s_-]/g, '')
+    .trim()
+    .replace(/\s+/g, '_')
+
   const now = new Date()
-  const yyyy = now.getFullYear()
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const dd = String(now.getDate()).padStart(2, '0')
-  const hh = String(now.getHours()).padStart(2, '0')
-  const min = String(now.getMinutes()).padStart(2, '0')
-  return `teleprompter-${yyyy}-${mm}-${dd}-${hh}${min}.${ext}`
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const date = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`
+  const time = `${pad(now.getHours())}-${pad(now.getMinutes())}`
+
+  return `${safeTitle}_${date}_${time}.${ext}`
 }
 
-export function useMediaRecorder(stream: MediaStream | null): UseMediaRecorderReturn {
+export function useMediaRecorder(stream: MediaStream | null, scriptTitle?: string): UseMediaRecorderReturn {
   const [isRecording, setIsRecording] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [filename, setFilename] = useState<string | null>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const prevUrlRef = useRef<string | null>(null)
+  const scriptTitleRef = useRef(scriptTitle)
+  scriptTitleRef.current = scriptTitle
 
   const startRecording = useCallback(() => {
     if (!stream) return
@@ -56,7 +65,7 @@ export function useMediaRecorder(stream: MediaStream | null): UseMediaRecorderRe
     const { mimeType, ext } = getSupportedFormat()
     const recorderOptions: MediaRecorderOptions = {
       videoBitsPerSecond: 8_000_000,  // 8 Mbps — alta qualidade
-      audioBitsPerSecond: 192_000,    // 192 kbps
+      audioBitsPerSecond: 128_000,    // 128 kbps
     }
     if (mimeType) recorderOptions.mimeType = mimeType
     const recorder = new MediaRecorder(stream, recorderOptions)
@@ -69,7 +78,7 @@ export function useMediaRecorder(stream: MediaStream | null): UseMediaRecorderRe
     recorder.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: mimeType || 'video/webm' })
       const url = URL.createObjectURL(blob)
-      const name = generateFilename(ext)
+      const name = generateFilename(ext, scriptTitleRef.current)
       prevUrlRef.current = url
       setDownloadUrl(url)
       setFilename(name)

@@ -42,7 +42,8 @@ export function useCamera(): UseCameraReturn {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          sampleRate: { ideal: 48000 },
+          sampleRate: 48000,
+          channelCount: 1,
         },
       })
       streamRef.current = mediaStream

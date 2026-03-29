@@ -29,7 +29,7 @@ export function TeleprompterPage() {
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { stream, error: cameraError, startCamera, stopCamera } = useCamera()
-  const { isRecording, downloadUrl, filename, startRecording, stopRecording, clearRecording } = useMediaRecorder(stream)
+  const { isRecording, downloadUrl, filename, startRecording, stopRecording, clearRecording } = useMediaRecorder(stream, script?.title)
   const { isPlaying, progress, play, pause, toggle, reset, scrollRef } = useTeleprompter(speed)
 
   // Carrega todos os roteiros do usuário
@@ -204,7 +204,7 @@ export function TeleprompterPage() {
         autoPlay
         playsInline
         muted
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
       />
 
       {/* Barra de progresso */}
@@ -233,7 +233,6 @@ export function TeleprompterPage() {
         isPlaying={isPlaying}
         isRecording={isRecording}
         downloadUrl={downloadUrl}
-        filename={filename}
         speed={speed}
         fontSize={fontSize}
         visible={showControls}
