@@ -62,10 +62,12 @@ export function TeleprompterPage() {
     return () => { cancelled = true }
   }, [scriptId])
 
-  // Mobile sempre retrato (stories), desktop sempre paisagem
+  // Inicia câmera apenas após o script (se houver) ter carregado,
+  // garantindo que <video> e <canvas> já estejam no DOM
   useEffect(() => {
+    if (scriptLoading) return
     startCamera(isMobile ? 'reels' : 'youtube')
-  }, [startCamera, isMobile])
+  }, [startCamera, isMobile, scriptLoading])
 
   // Cleanup ao desmontar
   useEffect(() => {
