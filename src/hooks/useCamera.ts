@@ -50,15 +50,13 @@ export function useCamera(): UseCameraReturn {
       }
 
       if (isReels) {
-        // Canvas portrait 1080×1920
         if (canvas.width !== 1080) canvas.width = 1080
         if (canvas.height !== 1920) canvas.height = 1920
-
-        // Sempre rotaciona: constraints são sempre landscape, portanto sempre precisa de 90°
-        // Math.PI/2 = horário (correto para câmera frontal mobile em retrato)
+      
         ctx.save()
         ctx.translate(canvas.width / 2, canvas.height / 2)
-        ctx.rotate(Math.PI / 2)
+        ctx.rotate(-Math.PI / 2)          // anti-horário
+        ctx.scale(-1, 1)                  // espelha horizontalmente (câmera frontal)
         const scale = Math.min(canvas.width / vh, canvas.height / vw)
         ctx.scale(scale, scale)
         ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh)
