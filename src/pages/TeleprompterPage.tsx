@@ -27,11 +27,10 @@ export function TeleprompterPage() {
   const [showControls, setShowControls] = useState(true)
   const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null)
 
-  const videoRef = useRef<HTMLVideoElement>(null)
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { stream, error: cameraError, startCamera, stopCamera } = useCamera()
-  const { isRecording, downloadUrl, filename, startRecording, stopRecording, clearRecording } = useMediaRecorder(stream, script?.title)
+  const { canvasStream, videoRef, canvasRef, error: cameraError, startCamera, stopCamera } = useCamera()
+  const { isRecording, downloadUrl, filename, startRecording, stopRecording, clearRecording } = useMediaRecorder(canvasStream, script?.title)
   const { isPlaying, progress, play, pause, toggle, reset, scrollRef } = useTeleprompter(speed)
 
   // Carrega todos os roteiros do usuário
@@ -67,13 +66,6 @@ export function TeleprompterPage() {
   useEffect(() => {
     startCamera(isMobile ? 'reels' : 'youtube')
   }, [startCamera, isMobile])
-
-  // Conecta stream ao elemento de vídeo
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream
-    }
-  }, [stream])
 
   // Cleanup ao desmontar
   useEffect(() => {
@@ -200,13 +192,16 @@ export function TeleprompterPage() {
       onMouseMove={handleActivity}
       onTouchStart={handleActivity}
     >
-      {/* Feed da câmera */}
+      {/* Canvas invisível — rotaciona e grava */}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+      {/* Preview da câmera — só visual */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', background: '#000', transform: 'scaleX(-1)' }}
       />
 
       {/* Barra de progresso */}

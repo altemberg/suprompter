@@ -41,7 +41,7 @@ function generateFilename(ext: string, scriptTitle?: string): string {
   return `${safeTitle}_${date}_${time}.${ext}`
 }
 
-export function useMediaRecorder(stream: MediaStream | null, scriptTitle?: string): UseMediaRecorderReturn {
+export function useMediaRecorder(canvasStream: MediaStream | null, scriptTitle?: string): UseMediaRecorderReturn {
   const [isRecording, setIsRecording] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [filename, setFilename] = useState<string | null>(null)
@@ -52,7 +52,7 @@ export function useMediaRecorder(stream: MediaStream | null, scriptTitle?: strin
   scriptTitleRef.current = scriptTitle
 
   const startRecording = useCallback(() => {
-    if (!stream) return
+    if (!canvasStream) return
 
     if (prevUrlRef.current) {
       URL.revokeObjectURL(prevUrlRef.current)
@@ -68,7 +68,7 @@ export function useMediaRecorder(stream: MediaStream | null, scriptTitle?: strin
       audioBitsPerSecond: 128_000,    // 128 kbps
     }
     if (mimeType) recorderOptions.mimeType = mimeType
-    const recorder = new MediaRecorder(stream, recorderOptions)
+    const recorder = new MediaRecorder(canvasStream, recorderOptions)
     recorderRef.current = recorder
 
     recorder.ondataavailable = (e) => {
@@ -87,7 +87,7 @@ export function useMediaRecorder(stream: MediaStream | null, scriptTitle?: strin
 
     recorder.start(100)
     setIsRecording(true)
-  }, [stream])
+  }, [canvasStream])
 
   const stopRecording = useCallback(() => {
     if (recorderRef.current && recorderRef.current.state !== 'inactive') {
