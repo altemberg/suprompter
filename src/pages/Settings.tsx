@@ -17,7 +17,7 @@ export function SettingsPage() {
 
   return (
     <div style={{ padding: isMobile ? '20px 16px' : '32px 36px', background: 'var(--bg-page)', minHeight: '100%' }}>
-    <div style={{ maxWidth: '520px' }}>
+    <div style={{ maxWidth: '520px', width: '100%' }}>
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '22px', fontWeight: 500, color: 'rgba(255,255,255,0.92)', letterSpacing: '-0.4px', marginBottom: '4px' }}>
           Configurações

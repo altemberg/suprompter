@@ -70,7 +70,7 @@ export function Scripts() {
 
   return (
     <div style={{ padding: isMobile ? '20px 16px' : '32px 36px', background: 'var(--bg-page)', minHeight: '100%' }}>
-    <div style={{ maxWidth: '720px' }}>
+    <div style={{ maxWidth: '720px', width: '100%' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px', gap: '12px' }}>
         <div>
@@ -93,7 +93,6 @@ export function Scripts() {
             cursor: creating ? 'not-allowed' : 'pointer',
             opacity: creating ? 0.6 : 1,
             transition: 'background 0.15s',
-            width: isMobile ? '100%' : 'auto',
             minHeight: '44px',
             flexShrink: 0,
           }}

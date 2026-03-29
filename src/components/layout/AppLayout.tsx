@@ -17,7 +17,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   if (isMobile) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#0d0d0d', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100dvh', background: '#0d0d0d', overflow: 'hidden' }}>
         {/* Top bar mobile */}
         <div style={{
           display: 'flex',
