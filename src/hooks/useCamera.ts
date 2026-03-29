@@ -55,8 +55,8 @@ export function useCamera(): UseCameraReturn {
       
         ctx.save()
         ctx.translate(canvas.width / 2, canvas.height / 2)
-        ctx.rotate(Math.PI / 2)
-        const scale = Math.min(canvas.width / vh, canvas.height / vw)
+        // Usa Math.max para fazer um center crop (object-fit: cover) sem girar
+        const scale = Math.max(canvas.width / vw, canvas.height / vh)
         ctx.scale(scale, scale)
         ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh)
         ctx.restore()
