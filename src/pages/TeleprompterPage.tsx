@@ -30,7 +30,7 @@ export function TeleprompterPage() {
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { canvasStream, videoRef, canvasRef, error: cameraError, startCamera, stopCamera } = useCamera()
-  const { isRecording, downloadUrl, fileName, processing, processingProgress, startRecording, stopRecording, clearRecording } = useMediaRecorder(canvasStream, script?.title)
+  const { isRecording, ffmpegReady, downloadUrl, fileName, processing, processingProgress, startRecording, stopRecording, clearRecording } = useMediaRecorder(canvasStream, script?.title)
   const { isPlaying, progress, play, pause, toggle, reset, scrollRef } = useTeleprompter(speed)
 
   // Carrega todos os roteiros do usuário
@@ -229,6 +229,7 @@ export function TeleprompterPage() {
         isPlaying={isPlaying}
         isRecording={isRecording}
         processing={processing}
+        ffmpegReady={ffmpegReady}
         downloadUrl={downloadUrl}
         speed={speed}
         fontSize={fontSize}

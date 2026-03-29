@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from 'react'
-import { processVideo, type ProcessingProgress } from '@/lib/ffmpeg'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { preloadFFmpeg, processVideo, type ProcessingProgress } from '@/lib/ffmpeg'
 
 interface UseMediaRecorderReturn {
   isRecording: boolean
+  ffmpegReady: boolean
   downloadUrl: string | null
   fileName: string | null
   processing: boolean
@@ -44,10 +45,18 @@ export function useMediaRecorder(
   scriptTitle?: string
 ): UseMediaRecorderReturn {
   const [isRecording, setIsRecording] = useState(false)
+  const [ffmpegReady, setFfmpegReady] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [processingProgress, setProcessingProgress] = useState<ProcessingProgress | null>(null)
+
+  // Pré-carrega o FFmpeg assim que o hook monta
+  useEffect(() => {
+    preloadFFmpeg()
+      .then(() => setFfmpegReady(true))
+      .catch(() => setFfmpegReady(true)) // em caso de falha, libera o botão mesmo assim
+  }, [])
 
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<BlobPart[]>([])
@@ -141,6 +150,7 @@ export function useMediaRecorder(
 
   return {
     isRecording,
+    ffmpegReady,
     downloadUrl,
     fileName,
     processing,

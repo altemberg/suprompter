@@ -22,6 +22,11 @@ async function loadFFmpeg(): Promise<FFmpeg> {
   return ffmpeg
 }
 
+// Pré-carrega o FFmpeg em background (singleton — seguro chamar várias vezes)
+export async function preloadFFmpeg(): Promise<void> {
+  await loadFFmpeg()
+}
+
 export interface ProcessingProgress {
   stage: 'loading' | 'processing' | 'done' | 'error'
   progress: number   // 0–100
