@@ -1,4 +1,4 @@
-import { Home, FileText, Video, Film, Settings } from 'lucide-react'
+import { Home, FileText, Video, Film, Captions, Settings } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Sidebar,
@@ -22,6 +22,7 @@ const navItems = [
   { label: 'Roteiros', icon: FileText, to: '/roteiros' },
   { label: 'Teleprompter', icon: Video, to: '/teleprompter' },
   { label: 'Gravações', icon: Film, to: '/gravacoes' },
+  { label: 'Transcritor', icon: Captions, to: '/transcritor' },
 ]
 
 export function AppSidebar({ onNavigate }: AppSidebarProps) {

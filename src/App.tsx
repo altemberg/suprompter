@@ -12,6 +12,7 @@ import { ScriptDetail } from '@/pages/ScriptDetail'
 import { TeleprompterPage } from '@/pages/TeleprompterPage'
 import { Recordings } from '@/pages/Recordings'
 import { SettingsPage } from '@/pages/Settings'
+import { Transcriber } from '@/pages/Transcriber'
 
 function AppRoutes() {
   const { initialize } = useAuthStore()
@@ -73,6 +74,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <AppLayout>
               <Recordings />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transcritor"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Transcriber />
             </AppLayout>
           </ProtectedRoute>
         }

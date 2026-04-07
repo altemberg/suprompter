@@ -226,6 +226,18 @@ const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) ?? ''
 
 ---
 
+## Transcritor (`/transcritor`)
+
+- Upload de vídeo/áudio (drag & drop ou clique)
+- Extração de áudio via Web Audio API se o arquivo for > 10MB (reduz tamanho enviado)
+- Transcrição via Whisper API (OpenAI) — chave `openai_api_key` configurada em Configurações, lida de `localStorage`
+- Exibe texto completo + segmentos com timestamps (toggle)
+- Botões: copiar texto e baixar .txt
+- Limite: 25MB (limite da API Whisper)
+- Lib em `src/lib/whisper.ts` — funções: `transcribeAudio`, `extractAudioFromVideo`
+
+---
+
 ## Módulo Gravações
 
 - Metadados salvos no **Supabase** (tabela `recordings`)

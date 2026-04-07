@@ -130,7 +130,15 @@ export function useMediaRecorder(
       }
     }
 
-    recorder.start(1000)   // coleta chunks a cada 1s
+    recorder.onerror = (e) => {
+      console.error('[MediaRecorder] erro:', e)
+      // Para a gravação graciosamente em vez de travar
+      if (recorder.state !== 'inactive') {
+        recorder.stop()
+      }
+    }
+
+    recorder.start(500)   // chunks de 500ms — reduz risco de perda em pressão de memória
     setIsRecording(true)
   }, [canvasStream])
 

@@ -10,6 +10,7 @@ export function SettingsPage() {
   const { signOut } = useAuthStore()
   const { speed, fontSize, setSpeed, setFontSize } = useTeleprompterStore()
 
+
   async function handleSignOut() {
     await signOut()
     navigate('/login')

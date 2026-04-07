@@ -9,7 +9,7 @@ interface UseCameraReturn {
   canvasRef: React.RefObject<HTMLCanvasElement | null>
   error: string | null
   loading: boolean
-  startCamera: (format: CameraFormat) => Promise<void>
+  startCamera: (format: CameraFormat, audioDeviceId?: string) => Promise<void>
   stopCamera: () => void
 }
 
@@ -26,24 +26,39 @@ export function useCamera(): UseCameraReturn {
   // Ref para cleanup confiável sem stale closure
   const streamRef = useRef<MediaStream | null>(null)
 
-  // Loop de desenho no canvas
+  // Loop de desenho no canvas — limitado a 30fps para casar com captureStream(30)
   const startDrawLoop = useCallback(() => {
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    if (!video || !canvas) return
+    const TARGET_FPS = 30
+    const FRAME_INTERVAL = 1000 / TARGET_FPS  // ~33ms por frame
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    let lastFrameTime = 0
 
-    const draw = () => {
+    const draw = (timestamp: number) => {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      if (!video || !canvas) return
+
+      // Controle de FPS — só desenha se passou tempo suficiente
+      const elapsed = timestamp - lastFrameTime
+      if (elapsed < FRAME_INTERVAL) {
+        animFrameRef.current = requestAnimationFrame(draw)
+        return
+      }
+      lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL)
+
       if (video.readyState < 2) {
         animFrameRef.current = requestAnimationFrame(draw)
         return
       }
 
+      // alpha: false = mais performático, elimina cálculo de canal alpha desnecessário
+      const ctx = canvas.getContext('2d', { alpha: false })
+      if (!ctx) return
+
       const isReels = formatRef.current === 'reels'
       const vw = video.videoWidth
       const vh = video.videoHeight
+
       if (!vw || !vh) {
         animFrameRef.current = requestAnimationFrame(draw)
         return
@@ -52,7 +67,7 @@ export function useCamera(): UseCameraReturn {
       if (isReels) {
         if (canvas.width !== 1080) canvas.width = 1080
         if (canvas.height !== 1920) canvas.height = 1920
-      
+
         ctx.save()
         ctx.translate(canvas.width / 2, canvas.height / 2)
         // Usa Math.max para fazer um center crop (object-fit: cover) sem girar
@@ -80,10 +95,15 @@ export function useCamera(): UseCameraReturn {
       animFrameRef.current = requestAnimationFrame(draw)
     }
 
-    animFrameRef.current = requestAnimationFrame(draw)
+    // Inicializa lastFrameTime no primeiro frame
+    const start = (ts: number) => {
+      lastFrameTime = ts
+      animFrameRef.current = requestAnimationFrame(draw)
+    }
+    animFrameRef.current = requestAnimationFrame(start)
   }, [])
 
-  const startCamera = useCallback(async (format: CameraFormat) => {
+  const startCamera = useCallback(async (format: CameraFormat, audioDeviceId?: string) => {
     setLoading(true)
     setError(null)
     formatRef.current = format
@@ -98,6 +118,9 @@ export function useCamera(): UseCameraReturn {
     try {
       const rawStream = await navigator.mediaDevices.getUserMedia({
         audio: {
+          ...(audioDeviceId && audioDeviceId !== 'default'
+            ? { deviceId: { exact: audioDeviceId } }
+            : {}),
           echoCancellation: true,
           noiseSuppression: true,
           sampleRate: { ideal: 48000 },

@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import type { Script } from '@/types'
 import { useCamera } from '@/hooks/useCamera'
 import { useMediaRecorder } from '@/hooks/useMediaRecorder'
+import { useAudioDevices } from '@/hooks/useAudioDevices'
 import { useTeleprompter } from '@/hooks/useTeleprompter'
 import { Controls } from '@/components/teleprompter/Controls'
 import { ScrollingText } from '@/components/teleprompter/ScrollingText'
@@ -29,6 +30,7 @@ export function TeleprompterPage() {
 
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const { devices: audioDevices, selectedDeviceId, setSelectedDeviceId } = useAudioDevices()
   const { canvasStream, videoRef, canvasRef, error: cameraError, startCamera, stopCamera } = useCamera()
   const { isRecording, ffmpegReady, downloadUrl, fileName, processing, processingProgress, startRecording, stopRecording, clearRecording } = useMediaRecorder(canvasStream, script?.title)
   const { isPlaying, progress, play, pause, toggle, reset, scrollRef } = useTeleprompter(speed)
@@ -62,20 +64,20 @@ export function TeleprompterPage() {
     return () => { cancelled = true }
   }, [scriptId])
 
-  // Inicia câmera apenas após o script (se houver) ter carregado,
-  // garantindo que <video> e <canvas> já estejam no DOM
+  // Inicia câmera apenas após o script (se houver) ter carregado.
+  // Reinicia automaticamente se o dispositivo de áudio mudar.
   useEffect(() => {
     if (scriptLoading) return
-    startCamera(isMobile ? 'reels' : 'youtube')
-  }, [startCamera, isMobile, scriptLoading])
+    startCamera(isMobile ? 'reels' : 'youtube', selectedDeviceId)
+    return () => { stopCamera() }
+  }, [startCamera, stopCamera, isMobile, scriptLoading, selectedDeviceId])
 
-  // Cleanup ao desmontar
+  // Cleanup ao desmontar (controles e timer)
   useEffect(() => {
     return () => {
-      stopCamera()
       if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current)
     }
-  }, [stopCamera])
+  }, [])
 
   // Auto-esconde controles após inatividade
   function handleActivity() {
@@ -224,6 +226,44 @@ export function TeleprompterPage() {
           script={scriptText}
           fontSize={fontSize}
         />
+      )}
+
+      {/* Seletor de microfone — aparece só quando há mais de 1 dispositivo */}
+      {audioDevices.length > 1 && !isRecording && (
+        <div style={{
+          position: 'absolute',
+          bottom: '120px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'min(320px, calc(100% - 32px))',
+          zIndex: 20,
+          opacity: showControls ? 1 : 0,
+          transition: 'opacity 0.3s',
+          pointerEvents: showControls ? 'auto' : 'none',
+        }}>
+          <label style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '6px' }}>
+            Microfone
+          </label>
+          <select
+            value={selectedDeviceId}
+            onChange={e => setSelectedDeviceId(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: '#161616',
+              border: '0.5px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              color: 'white',
+              fontSize: '14px',
+            }}
+          >
+            {audioDevices.map(d => (
+              <option key={d.deviceId} value={d.deviceId}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
       {/* Controles */}
