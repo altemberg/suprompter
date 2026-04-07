@@ -244,10 +244,20 @@ class handler(BaseHTTPRequestHandler):
                 })
 
             # 3. Baixa o áudio
-            tmp_path = download_audio(audio_url, original_url=url)
+            try:
+                tmp_path = download_audio(audio_url, original_url=url)
+                print(f"[download] OK: {tmp_path}")
+            except Exception as e:
+                print(f"[download] ERRO: {e}")
+                return self._respond(500, {"error": f"Erro no download: {str(e)}"})
 
             # 4. Transcreve
-            result = transcribe_with_whisper(tmp_path, api_key)
+            try:
+                result = transcribe_with_whisper(tmp_path, api_key)
+                print(f"[whisper] OK")
+            except Exception as e:
+                print(f"[whisper] ERRO: {e}")
+                return self._respond(500, {"error": f"Erro no Whisper: {str(e)}"})
 
             self._respond(200, {
                 "text": result.get("text", ""),
