@@ -86,8 +86,11 @@ def get_audio_url_cobalt(url: str) -> str:
     return audio_url
 
 
-def download_audio(audio_url: str) -> str:
-    """Baixa o áudio para arquivo temporário e retorna o caminho."""
+def download_audio(audio_url: str, original_url: str = "") -> str:
+    """Baixa o áudio via yt-dlp para que ele gerencie headers/cookies por plataforma."""
+    import yt_dlp
+    import glob
+
     suffix = ".mp3"
     if ".m4a" in audio_url:
         suffix = ".m4a"
@@ -95,23 +98,48 @@ def download_audio(audio_url: str) -> str:
         suffix = ".webm"
     elif ".ogg" in audio_url:
         suffix = ".ogg"
+    elif ".mp4" in audio_url:
+        suffix = ".mp4"
 
     tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
     tmp_path = tmp.name
     tmp.close()
 
-    req = urllib.request.Request(
-        audio_url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
-            "Accept": "*/*",
-        }
-    )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        with open(tmp_path, "wb") as f:
-            f.write(resp.read())
+    # Usa a URL original para que o yt-dlp gerencie headers/tokens por plataforma
+    download_target = original_url if original_url else audio_url
 
-    return tmp_path
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": tmp_path.replace(suffix, "") + ".%(ext)s",
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "postprocessors": [],
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(download_target, download=True)
+            if info and "requested_downloads" in info:
+                downloaded_path = info["requested_downloads"][0]["filepath"]
+            else:
+                base = tmp_path.replace(suffix, "")
+                matches = glob.glob(base + ".*")
+                if not matches:
+                    raise Exception("Arquivo baixado não encontrado")
+                downloaded_path = matches[0]
+
+        if downloaded_path != tmp_path:
+            os.rename(downloaded_path, tmp_path)
+
+        return tmp_path
+
+    except Exception as e:
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        raise Exception(f"Erro ao baixar áudio: {e}")
 
 
 def transcribe_with_whisper(tmp_path: str, api_key: str) -> dict:
@@ -216,7 +244,7 @@ class handler(BaseHTTPRequestHandler):
                 })
 
             # 3. Baixa o áudio
-            tmp_path = download_audio(audio_url)
+            tmp_path = download_audio(audio_url, original_url=url)
 
             # 4. Transcreve
             result = transcribe_with_whisper(tmp_path, api_key)
