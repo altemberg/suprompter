@@ -6,6 +6,7 @@ import tempfile
 import urllib.request
 
 COBALT_URL = os.environ.get("COBALT_URL", "")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 
 
 def get_audio_url_ytdlp(url: str) -> str:
@@ -119,13 +120,14 @@ class handler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(content_length))
             url = body.get("url", "").strip()
-            api_key = body.get("apiKey", "").strip()
+            # Usa a chave do ambiente do servidor; aceita também do body como fallback
+            api_key = OPENROUTER_API_KEY or body.get("apiKey", "").strip()
 
             if not url:
                 self._respond(400, {"error": "URL não fornecida"})
                 return
             if not api_key:
-                self._respond(400, {"error": "API key não fornecida"})
+                self._respond(400, {"error": "OPENROUTER_API_KEY não configurada no servidor"})
                 return
 
             # Tenta yt-dlp primeiro

@@ -16,14 +16,13 @@ export async function transcribeFromUrl(
   url: string,
   onProgress: (msg: string) => void
 ): Promise<TranscriptionResult> {
-  if (!OPENROUTER_API_KEY) throw new Error('VITE_OPENROUTER_API_KEY não configurada no .env')
-
   onProgress('Extraindo áudio...')
 
+  // A chave é lida pelo servidor (OPENROUTER_API_KEY) — não precisa vir do frontend
   const response = await fetch('/api/transcribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url, apiKey: OPENROUTER_API_KEY }),
+    body: JSON.stringify({ url }),
   })
 
   const data = await response.json().catch(() => ({})) as {
