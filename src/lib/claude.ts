@@ -250,16 +250,31 @@ PRINCÍPIOS UNIVERSAIS:
 
 ---
 
-Retorne o roteiro SEMPRE neste formato exato, sem texto adicional antes ou depois, sem marcações markdown:
+REGRAS DE FORMATAÇÃO — OBRIGATÓRIO:
+- Separe CADA ideia em seu próprio parágrafo
+- Coloque UMA linha em branco entre cada parágrafo
+- Máximo de 2 frases por parágrafo
+- NUNCA escreva mais de 2 frases seguidas sem quebrar parágrafo
+- O Desenvolvimento deve ter entre 4 e 6 parágrafos curtos
+
+Retorne APENAS neste formato exato, sem texto adicional antes ou depois, sem marcações markdown:
 
 [GANCHO]
-<texto do gancho>
+<primeira frase de impacto>
+
+<segunda frase complementar, se houver>
 
 [DESENVOLVIMENTO]
-<texto do desenvolvimento>
+<parágrafo 1 — máx 2 frases>
+
+<parágrafo 2 — máx 2 frases>
+
+<parágrafo 3 — máx 2 frases>
+
+<parágrafo 4 — máx 2 frases>
 
 [CTA]
-<texto da chamada para ação>`
+<chamada para ação direta>`
 }
 
 export async function generateScriptFromContext(params: {
