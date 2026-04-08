@@ -136,9 +136,6 @@ export async function generateScriptFromContext(params: {
   informacoesExtras: string
   formato: 'reels' | 'youtube'
 }, onChunk: (text: string) => void): Promise<void> {
-  const apiKey = localStorage.getItem('anthropic_api_key')
-  if (!apiKey) throw new Error('Anthropic API Key não configurada. Acesse Configurações.')
-
   const systemPrompt = `Você é um especialista em criação de roteiros para produtores de conteúdo digital.
 Sua tarefa é criar um roteiro estruturado em exatamente 3 partes:
 
@@ -173,44 +170,11 @@ O roteiro deve ser natural, fluido e adequado para ser lido no teleprompter.`
 
   const userMessage = parts.join('\n\n---\n\n') + '\n\nGere o roteiro agora.'
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      stream: true,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
-    }),
-  })
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    throw new Error((err as { error?: { message?: string } })?.error?.message ?? `Erro ${response.status} na API do Claude`)
-  }
-
-  const reader = response.body!.getReader()
-  const decoder = new TextDecoder()
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    const chunk = decoder.decode(value)
-    const lines = chunk.split('\n').filter(l => l.startsWith('data: '))
-    for (const line of lines) {
-      try {
-        const data = JSON.parse(line.slice(6))
-        if (data.type === 'content_block_delta' && data.delta?.text) {
-          onChunk(data.delta.text)
-        }
-      } catch { /* ignora linhas malformadas */ }
-    }
-  }
+  await streamOpenRouter(
+    [{ role: 'user', content: `${systemPrompt}\n\n${userMessage}` }],
+    onChunk,
+    2000,
+  )
 }
 
 export function parseRoteiro(texto: string): { gancho: string; desenvolvimento: string; cta: string } {
