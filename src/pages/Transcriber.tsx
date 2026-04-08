@@ -7,65 +7,106 @@ import { Upload, Link, Copy, Check, Download, ExternalLink } from 'lucide-react'
 type Stage = 'idle' | 'processing' | 'done' | 'error'
 type Tab = 'file' | 'url'
 
+function getEmbedUrl(url: string): string | null {
+  const ytMatch = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  )
+  if (ytMatch) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1`
+  }
+  // Instagram e TikTok não têm embed público confiável
+  return null
+}
+
 function VideoEmbed({ url }: { url: string }) {
-  const isYoutube = /youtube\.com|youtu\.be/.test(url)
-  const isInstagram = /instagram\.com\/(reel|p)\//.test(url)
+  const embedUrl = getEmbedUrl(url)
 
-  if (isYoutube) {
-    const ytMatch = url.match(
-      /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-    )
-    const embedUrl = ytMatch
-      ? `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1`
-      : null
-
-    if (!embedUrl) return null
-
+  if (!embedUrl) {
     return (
       <div style={{
-        position: 'relative',
-        width: '100%',
-        paddingTop: '56.25%',
+        background: '#161616',
+        border: '0.5px solid rgba(255,255,255,0.07)',
         borderRadius: '12px',
-        overflow: 'hidden',
-        background: '#000',
+        padding: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
         marginBottom: '16px',
       }}>
-        <iframe
-          src={embedUrl}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+        <ExternalLink size={16} color="rgba(255,255,255,0.4)" />
+        <div>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '2px' }}>
+            Preview não disponível para esta plataforma
+          </p>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: '12px', color: '#a9a3f0', textDecoration: 'none' }}
+          >
+            Abrir no app original →
+          </a>
+        </div>
       </div>
     )
   }
 
-  if (isInstagram) {
-    return (
-      <div
-        style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}
-        ref={(el) => {
-          if (!el) return
-          const w = window as unknown as { instgrm?: { Embeds: { process: () => void } } }
-          if (!w.instgrm) {
-            const script = document.createElement('script')
-            script.src = '//www.instagram.com/embed.js'
-            script.async = true
-            document.body.appendChild(script)
-          } else {
-            w.instgrm.Embeds.process()
-          }
-        }}
-      >
-        <blockquote
-          className="instagram-media"
-          data-instgrm-permalink={url}
-          data-instgrm-version="14"
-          style={{ maxWidth: '400px', width: '100%', minWidth: '326px', margin: '0 auto' }}
-        />
-      </div>
-    )
+  return (
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      paddingTop: '56.25%',
+      borderRadius: '12px',
+      overflow: 'hidden',
+      background: '#000',
+      marginBottom: '16px',
+    }}>
+      <iframe
+        src={embedUrl}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    </div>
+  )
+}
+
+interface Segment {
+  start: number
+  end: number
+  text: string
+}
+
+function TranscriptViewer({
+  segments,
+  fullText,
+  onTimestampClick,
+}: {
+  segments: Segment[]
+  fullText: string
+  onTimestampClick?: (seconds: number) => void
+}) {
+  const [view, setView] = useState<'segments' | 'full'>('segments')
+  const [copied, setCopied] = useState(false)
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+    const s = Math.floor(seconds % 60)
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(fullText)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleDownload = () => {
+    const blob = new Blob([fullText], { type: 'text/plain' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'transcricao.txt'
+    a.click()
   }
 
   return (
@@ -73,25 +114,123 @@ function VideoEmbed({ url }: { url: string }) {
       background: '#161616',
       border: '0.5px solid rgba(255,255,255,0.07)',
       borderRadius: '12px',
-      padding: '20px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      marginBottom: '16px',
+      overflow: 'hidden',
     }}>
-      <ExternalLink size={16} color="rgba(255,255,255,0.4)" />
-      <div>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '2px' }}>
-          Preview não disponível para esta plataforma
-        </p>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ fontSize: '12px', color: '#a9a3f0', textDecoration: 'none' }}
-        >
-          Abrir no app original →
-        </a>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '14px 20px',
+        borderBottom: '0.5px solid rgba(255,255,255,0.07)',
+      }}>
+        {/* Abas */}
+        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '3px' }}>
+          {(['segments', 'full'] as const).map(v => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              style={{
+                padding: '4px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 500,
+                background: view === v ? '#2a2a2a' : 'transparent',
+                color: view === v ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.35)',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+            >
+              {v === 'segments' ? 'Com timestamps' : 'Texto completo'}
+            </button>
+          ))}
+        </div>
+
+        {/* Ações */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={handleCopy}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              padding: '5px 10px',
+              background: 'rgba(127,119,221,0.15)',
+              border: '0.5px solid rgba(127,119,221,0.3)',
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: '#a9a3f0',
+              cursor: 'pointer',
+            }}
+          >
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+            {copied ? 'Copiado!' : 'Copiar'}
+          </button>
+          <button
+            onClick={handleDownload}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              padding: '5px 10px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '0.5px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: 'rgba(255,255,255,0.5)',
+              cursor: 'pointer',
+            }}
+          >
+            <Download size={12} />
+            .txt
+          </button>
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      <div style={{ padding: '16px 20px', maxHeight: '420px', overflowY: 'auto' }}>
+        {view === 'segments' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {segments.map((seg, i) => (
+              <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <button
+                  onClick={() => onTimestampClick?.(seg.start)}
+                  style={{
+                    flexShrink: 0,
+                    padding: '2px 8px',
+                    background: 'rgba(127,119,221,0.1)',
+                    border: '0.5px solid rgba(127,119,221,0.2)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: '#a9a3f0',
+                    cursor: onTimestampClick ? 'pointer' : 'default',
+                    fontVariantNumeric: 'tabular-nums',
+                    whiteSpace: 'nowrap',
+                    marginTop: '2px',
+                  }}
+                >
+                  {formatTime(seg.start)}
+                </button>
+                <p style={{
+                  fontSize: '14px',
+                  lineHeight: 1.6,
+                  color: 'rgba(255,255,255,0.78)',
+                  margin: 0,
+                }}>
+                  {seg.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{
+            fontSize: '14px',
+            lineHeight: 1.7,
+            color: 'rgba(255,255,255,0.78)',
+            whiteSpace: 'pre-wrap',
+            margin: 0,
+          }}>
+            {fullText}
+          </p>
+        )}
       </div>
     </div>
   )
@@ -105,14 +244,13 @@ export function Transcriber() {
   const [result, setResult] = useState<TranscriptionResult | null>(null)
   const [transcribedUrl, setTranscribedUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [showSegments, setShowSegments] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (file: File) => {
     setStage('processing')
     setError(null)
     setResult(null)
+    setTranscribedUrl(null)
 
     try {
       const audioFile = await extractAudioFromVideo(file)
@@ -132,11 +270,11 @@ export function Transcriber() {
     setStage('processing')
     setError(null)
     setResult(null)
+    setTranscribedUrl(url)
 
     try {
       const transcription = await transcribeFromUrl(url, setProgressMsg)
       setResult(transcription)
-      setTranscribedUrl(url)
       setStage('done')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
@@ -150,27 +288,20 @@ export function Transcriber() {
     if (file) handleFile(file)
   }
 
-  const handleCopy = () => {
-    if (!result) return
-    navigator.clipboard.writeText(result.text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleDownload = () => {
-    if (!result) return
-    const blob = new Blob([result.text], { type: 'text/plain' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'transcricao.txt'
-    a.click()
-  }
-
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
     const s = Math.floor(seconds % 60)
-    return `${m}:${String(s).padStart(2, '0')}`
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   }
+
+  const handleReset = () => {
+    setStage('idle')
+    setResult(null)
+    setTranscribedUrl(null)
+    setUrlInput('')
+  }
+
+  const isYoutube = transcribedUrl ? /youtube\.com|youtu\.be/.test(transcribedUrl) : false
 
   return (
     <div style={{ padding: '32px 36px', overflowY: 'auto', height: '100%' }}>
@@ -324,84 +455,52 @@ export function Transcriber() {
       {stage === 'done' && result && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-          {/* Preview do vídeo */}
-          {transcribedUrl && <VideoEmbed url={transcribedUrl} />}
-
           {/* Meta info */}
           {result.duration && (
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '16px' }}>
               <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>
                 Duração: {formatTime(result.duration)}
               </span>
               {result.language && (
                 <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>
-                  Idioma detectado: {result.language}
+                  Idioma: {result.language}
                 </span>
               )}
             </div>
           )}
 
-          {/* Texto completo */}
-          <div style={{ background: '#161616', border: '0.5px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <p style={{ fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.4)' }}>
-                Transcrição
-              </p>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={handleCopy}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(127,119,221,0.15)', border: '0.5px solid rgba(127,119,221,0.3)', borderRadius: '6px', fontSize: '12px', color: '#a9a3f0', cursor: 'pointer' }}
-                >
-                  {copied ? <Check size={12} /> : <Copy size={12} />}
-                  {copied ? 'Copiado!' : 'Copiar'}
-                </button>
-                <button
-                  onClick={handleDownload}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: '6px', fontSize: '12px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}
-                >
-                  <Download size={12} />
-                  .txt
-                </button>
-              </div>
-            </div>
-            <p style={{ fontSize: '15px', lineHeight: 1.7, color: 'rgba(255,255,255,0.82)', whiteSpace: 'pre-wrap' }}>
-              {result.text}
-            </p>
-          </div>
+          {/* Vídeo embedded */}
+          {transcribedUrl && <VideoEmbed url={transcribedUrl} />}
 
-          {/* Segmentos com timestamps (toggle) */}
-          {result.segments && result.segments.length > 0 && (
-            <div style={{ background: '#161616', border: '0.5px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden' }}>
-              <button
-                onClick={() => setShowSegments(s => !s)}
-                style={{ width: '100%', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.55)', fontSize: '13px' }}
-              >
-                <span>Ver segmentos com timestamps</span>
-                <span>{showSegments ? '↑' : '↓'}</span>
-              </button>
-              {showSegments && (
-                <div style={{ padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {result.segments.map((seg, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', flexShrink: 0, paddingTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
-                        {formatTime(seg.start)}
-                      </span>
-                      <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
-                        {seg.text}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+          {/* Transcrição */}
+          {result.segments && result.segments.length > 0 ? (
+            <TranscriptViewer
+              segments={result.segments}
+              fullText={result.text}
+              onTimestampClick={isYoutube ? (seconds) => {
+                const iframe = document.querySelector('iframe')
+                if (iframe) {
+                  iframe.contentWindow?.postMessage(
+                    JSON.stringify({ event: 'command', func: 'seekTo', args: [seconds, true] }),
+                    '*'
+                  )
+                }
+              } : undefined}
+            />
+          ) : (
+            <div style={{ background: '#161616', border: '0.5px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '20px' }}>
+              <p style={{ fontSize: '14px', lineHeight: 1.7, color: 'rgba(255,255,255,0.78)', whiteSpace: 'pre-wrap', margin: 0 }}>
+                {result.text}
+              </p>
             </div>
           )}
 
           {/* Nova transcrição */}
           <button
-            onClick={() => { setStage('idle'); setResult(null) }}
+            onClick={handleReset}
             style={{ alignSelf: 'flex-start', fontSize: '13px', color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
-            ← Transcrever outro arquivo
+            ← Transcrever outro vídeo
           </button>
         </div>
       )}

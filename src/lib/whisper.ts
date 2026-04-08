@@ -73,7 +73,7 @@ export async function transcribeAudio(
     headers: {
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'HTTP-Referer': window.location.origin,
-      'X-Title': 'Suprompter',
+      'X-Title': 'Opinify',
     },
     body: formData,
   })

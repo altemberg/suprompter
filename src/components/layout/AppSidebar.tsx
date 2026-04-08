@@ -45,7 +45,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
     <Sidebar>
       <SidebarHeader style={{ padding: '20px', borderBottom: '0.5px solid rgba(255,255,255,0.07)' }}>
         <span style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '-0.3px', color: 'white' }}>
-          Su<span style={{ color: '#a9a3f0' }}>prompter</span>
+          Opini<span style={{ color: '#a9a3f0' }}>fy</span>
         </span>
       </SidebarHeader>
 

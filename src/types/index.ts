@@ -1,5 +1,13 @@
 export type Format = 'reels' | 'youtube'
 
+export interface Posicionamento {
+  id: string
+  user_id: string
+  nome: string
+  descricao: string
+  created_at: string
+}
+
 export interface Script {
   id: string
   user_id: string
@@ -8,6 +16,13 @@ export interface Script {
   format: Format
   tone: string
   tags: string[]
+  gancho: string
+  desenvolvimento: string
+  cta: string
+  posicionamento_id: string | null
+  video_url: string | null
+  transcricao: string | null
+  informacoes_extras: string
   created_at: string
   updated_at: string
 }

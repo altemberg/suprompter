@@ -70,7 +70,7 @@ export function Scripts() {
 
   return (
     <div style={{ padding: isMobile ? '20px 16px' : '32px 36px', background: 'var(--bg-page)', minHeight: '100%' }}>
-    <div style={{ maxWidth: '720px', width: '100%' }}>
+    <div style={{ width: '100%' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px', gap: '12px' }}>
         <div>
@@ -170,7 +170,7 @@ export function Scripts() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
           {filtered.map((script) => (
-            <ScriptCard key={script.id} script={script} />
+            <ScriptCard key={script.id} script={script} onDelete={(id) => setScripts(prev => prev.filter(s => s.id !== id))} />
           ))}
         </div>
       )}

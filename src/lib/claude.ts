@@ -130,6 +130,100 @@ Instrução: ${placement}. O resultado final deve soar fluido, como se o roteiro
   }], onChunk, 1024)
 }
 
+export async function generateScriptFromContext(params: {
+  posicionamento: string | null
+  transcricao: string | null
+  informacoesExtras: string
+  formato: 'reels' | 'youtube'
+}, onChunk: (text: string) => void): Promise<void> {
+  const apiKey = localStorage.getItem('anthropic_api_key')
+  if (!apiKey) throw new Error('Anthropic API Key não configurada. Acesse Configurações.')
+
+  const systemPrompt = `Você é um especialista em criação de roteiros para produtores de conteúdo digital.
+Sua tarefa é criar um roteiro estruturado em exatamente 3 partes:
+
+**GANCHO**: A abertura impactante que prende a atenção nos primeiros 3 segundos.
+**DESENVOLVIMENTO**: O conteúdo principal com as informações, histórias ou argumentos.
+**CHAMADA PARA AÇÃO**: O encerramento com uma ação clara para o espectador.
+
+Retorne o roteiro SEMPRE neste formato exato, sem texto adicional antes ou depois:
+
+[GANCHO]
+<texto do gancho aqui>
+
+[DESENVOLVIMENTO]
+<texto do desenvolvimento aqui>
+
+[CTA]
+<texto da chamada para ação aqui>
+
+O roteiro deve ser natural, fluido e adequado para ser lido no teleprompter.`
+
+  const parts: string[] = []
+  if (params.posicionamento) {
+    parts.push(`POSICIONAMENTO DE COMUNICAÇÃO:\n${params.posicionamento}`)
+  }
+  if (params.transcricao) {
+    parts.push(`CONTEÚDO DE REFERÊNCIA (transcrição de vídeo):\n${params.transcricao}`)
+  }
+  if (params.informacoesExtras.trim()) {
+    parts.push(`INFORMAÇÕES COMPLEMENTARES:\n${params.informacoesExtras}`)
+  }
+  parts.push(`FORMATO: ${params.formato === 'reels' ? 'Reels/Stories (curto, máx 90s)' : 'YouTube (pode ser mais longo)'}`)
+
+  const userMessage = parts.join('\n\n---\n\n') + '\n\nGere o roteiro agora.'
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      stream: true,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error((err as { error?: { message?: string } })?.error?.message ?? `Erro ${response.status} na API do Claude`)
+  }
+
+  const reader = response.body!.getReader()
+  const decoder = new TextDecoder()
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    const chunk = decoder.decode(value)
+    const lines = chunk.split('\n').filter(l => l.startsWith('data: '))
+    for (const line of lines) {
+      try {
+        const data = JSON.parse(line.slice(6))
+        if (data.type === 'content_block_delta' && data.delta?.text) {
+          onChunk(data.delta.text)
+        }
+      } catch { /* ignora linhas malformadas */ }
+    }
+  }
+}
+
+export function parseRoteiro(texto: string): { gancho: string; desenvolvimento: string; cta: string } {
+  const ganchoMatch = texto.match(/\[GANCHO\]\s*([\s\S]*?)(?=\[DESENVOLVIMENTO\]|$)/)
+  const desenvolMatch = texto.match(/\[DESENVOLVIMENTO\]\s*([\s\S]*?)(?=\[CTA\]|$)/)
+  const ctaMatch = texto.match(/\[CTA\]\s*([\s\S]*?)$/)
+  return {
+    gancho: ganchoMatch?.[1]?.trim() ?? '',
+    desenvolvimento: desenvolMatch?.[1]?.trim() ?? '',
+    cta: ctaMatch?.[1]?.trim() ?? '',
+  }
+}
+
 export async function suggestHooksAndCTAs(params: {
   scriptContent: string
   format: Format
