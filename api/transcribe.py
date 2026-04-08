@@ -5,7 +5,7 @@ import tempfile
 import urllib.request
 
 COBALT_URL = os.environ.get("COBALT_URL", "")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 
 def get_audio_url_ytdlp(url: str) -> str:
@@ -148,7 +148,7 @@ def transcribe_with_whisper(tmp_path: str, api_key: str) -> dict:
 
     with open(tmp_path, "rb") as f:
         response = requests.post(
-            "https://api.groq.com/openai/v1/audio/transcriptions",
+            "https://api.openai.com/v1/audio/transcriptions",
             headers={
                 "Authorization": f"Bearer {api_key}",
             },
@@ -156,7 +156,7 @@ def transcribe_with_whisper(tmp_path: str, api_key: str) -> dict:
                 "file": (os.path.basename(tmp_path), f, "audio/mpeg"),
             },
             data={
-                "model": "whisper-large-v3-turbo",
+                "model": "whisper-1",
                 "language": "pt",
                 "response_format": "verbose_json",
             },
@@ -176,12 +176,12 @@ class handler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(content_length))
             url = body.get("url", "").strip()
-            api_key = GROQ_API_KEY or body.get("apiKey", "").strip()
+            api_key = OPENAI_API_KEY or body.get("apiKey", "").strip()
 
             if not url:
                 return self._respond(400, {"error": "URL não fornecida"})
             if not api_key:
-                return self._respond(400, {"error": "GROQ_API_KEY não configurada no servidor"})
+                return self._respond(400, {"error": "OPENAI_API_KEY não configurada no servidor"})
 
             # 1. Tenta yt-dlp
             audio_url = None
