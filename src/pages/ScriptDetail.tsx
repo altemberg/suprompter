@@ -1,10 +1,76 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Loader2, Save, Video, X } from 'lucide-react'
+import { Copy, Check, Loader2, Save, Video, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { generateScriptFromContext, parseRoteiro } from '@/lib/claude'
 import { transcribeFromUrl } from '@/lib/whisper'
 import type { Posicionamento, Objetivo } from '@/types'
+
+function ScriptBlock({
+  label, emoji, value, onChange, minHeight, accentColor, bgColor,
+}: {
+  label: string; emoji: string; value: string; onChange: (v: string) => void
+  minHeight: number; accentColor: string; bgColor: string
+}) {
+  const [hovered, setHovered] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }, [value])
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: 'relative',
+        background: bgColor,
+        border: `0.5px solid ${hovered ? accentColor.replace(/[\d.]+\)$/, '0.25)') : 'transparent'}`,
+        borderRadius: '12px',
+        padding: '16px 20px 20px',
+        transition: 'border-color 0.2s',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: accentColor }}>
+          {emoji} {label}
+        </span>
+        <div style={{ display: 'flex', gap: '4px', opacity: hovered ? 1 : 0, transition: 'opacity 0.15s', pointerEvents: hovered ? 'auto' : 'none' }}>
+          <button onClick={handleCopy} title="Copiar" style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: copied ? '#4ecda4' : 'rgba(255,255,255,0.5)' }}>
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+          </button>
+          <button onClick={() => onChange('')} title="Limpar" style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)' }}>
+            <X size={12} />
+          </button>
+        </div>
+      </div>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          width: '100%', minHeight: `${minHeight}px`,
+          background: 'transparent', border: 'none', outline: 'none',
+          resize: 'none', overflow: 'hidden',
+          fontFamily: 'Georgia, "Times New Roman", serif',
+          fontSize: '15px', lineHeight: '1.75',
+          color: 'rgba(255,255,255,0.85)', padding: 0, letterSpacing: '0.01em',
+        }}
+      />
+    </div>
+  )
+}
 
 export function ScriptDetail() {
   const { id } = useParams<{ id: string }>()
@@ -453,22 +519,9 @@ export function ScriptDetail() {
       <div style={{ width: '50%', overflowY: 'auto', padding: '32px 28px' }}>
 
         {!gerando && !roteiroGerado && (
-          <div style={{
-            height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexDirection: 'column', gap: '12px',
-          }}>
-            <div style={{
-              width: '48px', height: '48px', borderRadius: '12px',
-              background: 'rgba(127,119,221,0.08)', border: '0.5px solid rgba(127,119,221,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px',
-            }}>
-              ✨
-            </div>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px', userSelect: 'none' }}>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.15)', textAlign: 'center', lineHeight: 1.6 }}>
               O roteiro será gerado aqui
-            </p>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.15)', textAlign: 'center', maxWidth: '240px' }}>
-              Preencha as seções ao lado e clique em "Gerar Roteiro com IA"
             </p>
           </div>
         )}
@@ -503,62 +556,30 @@ export function ScriptDetail() {
               </button>
             </div>
 
-            {/* Gancho */}
-            <div style={{ background: '#111', border: '0.5px solid rgba(255,165,0,0.2)', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '10px 16px', borderBottom: '0.5px solid rgba(255,255,255,0.06)', background: 'rgba(255,165,0,0.06)' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'rgba(255,165,0,0.7)' }}>
-                  🎣 Gancho
-                </span>
-              </div>
-              <textarea
-                value={gancho}
-                onChange={e => { setGancho(e.target.value); triggerAutoSave() }}
-                style={{
-                  width: '100%', padding: '16px', fontSize: '14px', lineHeight: 1.7,
-                  background: 'transparent', border: 'none', outline: 'none',
-                  color: 'rgba(255,255,255,0.82)', resize: 'vertical', fontFamily: 'Georgia, serif',
-                  minHeight: '100px', boxSizing: 'border-box',
-                }}
-              />
-            </div>
-
-            {/* Desenvolvimento */}
-            <div style={{ background: '#111', border: '0.5px solid rgba(127,119,221,0.2)', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '10px 16px', borderBottom: '0.5px solid rgba(255,255,255,0.06)', background: 'rgba(127,119,221,0.06)' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'rgba(127,119,221,0.7)' }}>
-                  📖 Desenvolvimento
-                </span>
-              </div>
-              <textarea
-                value={desenvolvimento}
-                onChange={e => { setDesenvolvimento(e.target.value); triggerAutoSave() }}
-                style={{
-                  width: '100%', padding: '16px', fontSize: '14px', lineHeight: 1.7,
-                  background: 'transparent', border: 'none', outline: 'none',
-                  color: 'rgba(255,255,255,0.82)', resize: 'vertical', fontFamily: 'Georgia, serif',
-                  minHeight: '200px', boxSizing: 'border-box',
-                }}
-              />
-            </div>
-
-            {/* CTA */}
-            <div style={{ background: '#111', border: '0.5px solid rgba(29,158,117,0.2)', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '10px 16px', borderBottom: '0.5px solid rgba(255,255,255,0.06)', background: 'rgba(29,158,117,0.06)' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'rgba(29,158,117,0.7)' }}>
-                  📣 Chamada para Ação
-                </span>
-              </div>
-              <textarea
-                value={cta}
-                onChange={e => { setCta(e.target.value); triggerAutoSave() }}
-                style={{
-                  width: '100%', padding: '16px', fontSize: '14px', lineHeight: 1.7,
-                  background: 'transparent', border: 'none', outline: 'none',
-                  color: 'rgba(255,255,255,0.82)', resize: 'vertical', fontFamily: 'Georgia, serif',
-                  minHeight: '80px', boxSizing: 'border-box',
-                }}
-              />
-            </div>
+            <ScriptBlock
+              label="Gancho" emoji="🎣"
+              value={gancho}
+              onChange={(v) => { setGancho(v); triggerAutoSave() }}
+              minHeight={80}
+              accentColor="rgba(255, 180, 0, 0.8)"
+              bgColor="rgba(255, 165, 0, 0.07)"
+            />
+            <ScriptBlock
+              label="Desenvolvimento" emoji="📖"
+              value={desenvolvimento}
+              onChange={(v) => { setDesenvolvimento(v); triggerAutoSave() }}
+              minHeight={160}
+              accentColor="rgba(160, 150, 255, 0.8)"
+              bgColor="rgba(127, 119, 221, 0.07)"
+            />
+            <ScriptBlock
+              label="Chamada para Ação" emoji="📣"
+              value={cta}
+              onChange={(v) => { setCta(v); triggerAutoSave() }}
+              minHeight={80}
+              accentColor="rgba(29, 200, 130, 0.8)"
+              bgColor="rgba(29, 158, 117, 0.07)"
+            />
           </div>
         )}
       </div>
