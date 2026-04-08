@@ -47,13 +47,14 @@ function VideoEmbed({ url }: { url: string }) {
         style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}
         ref={(el) => {
           if (!el) return
-          if (!(window as { instgrm?: { Embeds: { process: () => void } } }).instgrm) {
+          const w = window as unknown as { instgrm?: { Embeds: { process: () => void } } }
+          if (!w.instgrm) {
             const script = document.createElement('script')
             script.src = '//www.instagram.com/embed.js'
             script.async = true
             document.body.appendChild(script)
           } else {
-            (window as { instgrm: { Embeds: { process: () => void } } }).instgrm.Embeds.process()
+            w.instgrm.Embeds.process()
           }
         }}
       >
