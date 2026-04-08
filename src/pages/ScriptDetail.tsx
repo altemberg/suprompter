@@ -125,6 +125,16 @@ export function ScriptDetail() {
   const [cta, setCta] = useState('')
   const [roteiroGerado, setRoteiroGerado] = useState(false)
 
+  // ── Responsividade ──
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  const [activeTab, setActiveTab] = useState<'config' | 'roteiro'>('config')
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+
   // ── Carrega posicionamentos e dados do roteiro ──
   useEffect(() => {
     supabase.from('posicionamentos').select('*').order('created_at', { ascending: false })
@@ -237,6 +247,7 @@ export function ScriptDetail() {
       setDesenvolvimento(parsed.desenvolvimento)
       setCta(parsed.cta)
       setRoteiroGerado(true)
+      setActiveTab('roteiro')
       await salvar({ gancho: parsed.gancho, desenvolvimento: parsed.desenvolvimento, cta: parsed.cta })
     } catch (err: unknown) {
       console.error('Erro ao gerar roteiro:', err)
@@ -246,13 +257,48 @@ export function ScriptDetail() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: '#0d0d0d' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: '#0d0d0d' }}>
+
+      {/* ══════════════════ TAB BAR MOBILE ══════════════════ */}
+      {isMobile && (
+        <div style={{
+          display: 'flex', borderBottom: '0.5px solid rgba(255,255,255,0.07)',
+          background: '#0d0d0d', flexShrink: 0,
+        }}>
+          {(['config', 'roteiro'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                flex: 1, padding: '13px 0', fontSize: '13px', fontWeight: 500,
+                background: 'none', border: 'none', cursor: 'pointer',
+                borderBottom: activeTab === tab ? '2px solid #a9a3f0' : '2px solid transparent',
+                color: activeTab === tab ? '#a9a3f0' : 'rgba(255,255,255,0.35)',
+                transition: 'color 0.15s',
+              }}
+            >
+              {tab === 'config' ? 'Configurar' : 'Roteiro'}
+              {tab === 'roteiro' && (gerando || roteiroGerado) && (
+                <span style={{
+                  display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%',
+                  background: gerando ? '#a9a3f0' : '#4ecda4', marginLeft: '6px', verticalAlign: 'middle',
+                }} />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ══════════════════ CONTEÚDO ══════════════════ */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
       {/* ══════════════════ COLUNA ESQUERDA ══════════════════ */}
       <div style={{
-        width: '50%', overflowY: 'auto', padding: '32px 28px',
-        borderRight: '0.5px solid rgba(255,255,255,0.07)',
-        display: 'flex', flexDirection: 'column', gap: '8px',
+        width: isMobile ? '100%' : '50%',
+        display: isMobile && activeTab !== 'config' ? 'none' : 'flex',
+        overflowY: 'auto', padding: isMobile ? '20px 16px' : '32px 28px',
+        borderRight: isMobile ? 'none' : '0.5px solid rgba(255,255,255,0.07)',
+        flexDirection: 'column', gap: '8px',
       }}>
 
         {/* Título + formato */}
@@ -534,7 +580,11 @@ export function ScriptDetail() {
       </div>
 
       {/* ══════════════════ COLUNA DIREITA ══════════════════ */}
-      <div style={{ width: '50%', overflowY: 'auto', padding: '32px 28px' }}>
+      <div style={{
+        width: isMobile ? '100%' : '50%',
+        display: isMobile && activeTab !== 'roteiro' ? 'none' : 'block',
+        overflowY: 'auto', padding: isMobile ? '20px 16px' : '32px 28px',
+      }}>
 
         {!gerando && !roteiroGerado && (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px', userSelect: 'none' }}>
@@ -596,6 +646,8 @@ export function ScriptDetail() {
           </div>
         )}
       </div>
+
+      </div>{/* fim wrapper colunas */}
 
       {/* ══════════════════ MODAL TRANSCRIÇÃO ══════════════════ */}
       {modalTranscricaoAberto && transcricao && (
