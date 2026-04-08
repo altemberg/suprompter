@@ -1,6 +1,10 @@
 {
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "functions": {
     "api/transcribe.py": {
+      "runtime": "python3.12",
       "maxDuration": 120
     }
   },
