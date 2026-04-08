@@ -210,53 +210,52 @@ export function ScriptDetail() {
             </span>.
           </p>
 
-          {posicionamentos.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <button
-              onClick={() => navigate('/configuracoes')}
+              onClick={() => { setPosicionamentoId(null); triggerAutoSave() }}
               style={{
-                width: '100%', padding: '10px', background: 'rgba(127,119,221,0.08)',
-                border: '1px dashed rgba(127,119,221,0.25)', borderRadius: '8px',
-                color: '#a9a3f0', fontSize: '13px', cursor: 'pointer',
+                padding: '10px 14px', borderRadius: '8px', textAlign: 'left',
+                border: '0.5px solid',
+                background: posicionamentoId === null ? 'rgba(255,255,255,0.05)' : 'transparent',
+                borderColor: posicionamentoId === null ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)',
+                color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer',
               }}
             >
-              + Criar primeiro posicionamento
+              Sem posicionamento específico
             </button>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {posicionamentos.map(p => (
               <button
-                onClick={() => { setPosicionamentoId(null); triggerAutoSave() }}
+                key={p.id}
+                onClick={() => { setPosicionamentoId(p.id); triggerAutoSave() }}
                 style={{
                   padding: '10px 14px', borderRadius: '8px', textAlign: 'left',
                   border: '0.5px solid',
-                  background: posicionamentoId === null ? 'rgba(255,255,255,0.05)' : 'transparent',
-                  borderColor: posicionamentoId === null ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)',
-                  color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer',
+                  background: posicionamentoId === p.id ? 'rgba(127,119,221,0.12)' : 'transparent',
+                  borderColor: posicionamentoId === p.id ? 'rgba(127,119,221,0.3)' : 'rgba(255,255,255,0.06)',
+                  cursor: 'pointer',
                 }}
               >
-                Sem posicionamento específico
+                <p style={{ fontSize: '13.5px', fontWeight: 500, color: posicionamentoId === p.id ? '#a9a3f0' : 'rgba(255,255,255,0.7)', marginBottom: '2px' }}>
+                  {p.nome}
+                </p>
+                <p style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.4 }}>
+                  {p.descricao.slice(0, 80)}{p.descricao.length > 80 ? '...' : ''}
+                </p>
               </button>
-              {posicionamentos.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => { setPosicionamentoId(p.id); triggerAutoSave() }}
-                  style={{
-                    padding: '10px 14px', borderRadius: '8px', textAlign: 'left',
-                    border: '0.5px solid',
-                    background: posicionamentoId === p.id ? 'rgba(127,119,221,0.12)' : 'transparent',
-                    borderColor: posicionamentoId === p.id ? 'rgba(127,119,221,0.3)' : 'rgba(255,255,255,0.06)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <p style={{ fontSize: '13.5px', fontWeight: 500, color: posicionamentoId === p.id ? '#a9a3f0' : 'rgba(255,255,255,0.7)', marginBottom: '2px' }}>
-                    {p.nome}
-                  </p>
-                  <p style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.4 }}>
-                    {p.descricao.slice(0, 80)}{p.descricao.length > 80 ? '...' : ''}
-                  </p>
-                </button>
-              ))}
-            </div>
-          )}
+            ))}
+            {posicionamentos.length === 0 && (
+              <button
+                onClick={() => navigate('/configuracoes')}
+                style={{
+                  padding: '9px', background: 'transparent',
+                  border: '1px dashed rgba(127,119,221,0.2)', borderRadius: '8px',
+                  color: 'rgba(127,119,221,0.6)', fontSize: '12px', cursor: 'pointer',
+                }}
+              >
+                + Criar posicionamentos em Configurações
+              </button>
+            )}
+          </div>
         </div>
 
         {/* ── SEÇÃO 2: Vídeo de referência ── */}
