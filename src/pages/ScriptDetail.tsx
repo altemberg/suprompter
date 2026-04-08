@@ -11,13 +11,11 @@ function ScriptBlock({
   emoji,
   value,
   onChange,
-  minHeight,
 }: {
   label: string
   emoji: string
   value: string
   onChange: (v: string) => void
-  minHeight: number
 }) {
   const [hovered, setHovered] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -611,7 +609,6 @@ export function ScriptDetail() {
               label="Gancho" emoji="🎣"
               value={gancho}
               onChange={(v) => { setGancho(v); triggerAutoSave() }}
-              minHeight={80}
             />
 
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '8px 0' }} />
@@ -620,7 +617,6 @@ export function ScriptDetail() {
               label="Desenvolvimento" emoji="📖"
               value={desenvolvimento}
               onChange={(v) => { setDesenvolvimento(v); triggerAutoSave() }}
-              minHeight={160}
             />
 
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '8px 0' }} />
@@ -629,7 +625,6 @@ export function ScriptDetail() {
               label="Chamada para Ação" emoji="📣"
               value={cta}
               onChange={(v) => { setCta(v); triggerAutoSave() }}
-              minHeight={80}
             />
           </div>
         )}
