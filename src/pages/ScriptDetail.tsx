@@ -35,11 +35,11 @@ function ScriptBlock({
       onMouseLeave={() => setHovered(false)}
       style={{
         position: 'relative',
-        background: bgColor,
-        border: `0.5px solid ${hovered ? accentColor.replace(/[\d.]+\)$/, '0.25)') : 'transparent'}`,
+        background: hovered ? bgColor : 'transparent',
+        border: `0.5px solid ${hovered ? accentColor.replace(/[\d.]+\)$/, '0.2)') : 'rgba(255,255,255,0.05)'}`,
         borderRadius: '12px',
         padding: '16px 20px 20px',
-        transition: 'border-color 0.2s',
+        transition: 'background 0.2s, border-color 0.2s',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -561,8 +561,8 @@ export function ScriptDetail() {
               value={gancho}
               onChange={(v) => { setGancho(v); triggerAutoSave() }}
               minHeight={80}
-              accentColor="rgba(255, 180, 0, 0.8)"
-              bgColor="rgba(255, 165, 0, 0.07)"
+              accentColor="rgba(160, 150, 255, 0.8)"
+              bgColor="rgba(127, 119, 221, 0.07)"
             />
             <ScriptBlock
               label="Desenvolvimento" emoji="📖"
@@ -577,8 +577,8 @@ export function ScriptDetail() {
               value={cta}
               onChange={(v) => { setCta(v); triggerAutoSave() }}
               minHeight={80}
-              accentColor="rgba(29, 200, 130, 0.8)"
-              bgColor="rgba(29, 158, 117, 0.07)"
+              accentColor="rgba(160, 150, 255, 0.8)"
+              bgColor="rgba(127, 119, 221, 0.07)"
             />
           </div>
         )}
