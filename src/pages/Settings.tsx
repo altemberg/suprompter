@@ -31,9 +31,10 @@ export function SettingsPage() {
   const handleSalvarPosicionamento = async () => {
     if (!novoNome.trim() || !novaDescricao.trim()) return
     setSalvando(true)
+    const { data: { user } } = await supabase.auth.getUser()
     const { data } = await supabase
       .from('posicionamentos')
-      .insert({ nome: novoNome.trim(), descricao: novaDescricao.trim() })
+      .insert({ nome: novoNome.trim(), descricao: novaDescricao.trim(), user_id: user?.id })
       .select()
       .single()
     if (data) setPosicionamentos(prev => [data, ...prev])
