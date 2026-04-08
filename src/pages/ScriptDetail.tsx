@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Copy, Check, Loader2, Save, Video, X } from 'lucide-react'
+import { Loader2, Save, Video, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { generateScriptFromContext, parseRoteiro } from '@/lib/claude'
 import { transcribeFromUrl } from '@/lib/whisper'
@@ -18,7 +18,6 @@ function ScriptBlock({
   onChange: (v: string) => void
 }) {
   const [hovered, setHovered] = useState(false)
-  const [copied, setCopied] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -28,12 +27,6 @@ function ScriptBlock({
     el.style.height = el.scrollHeight + 'px'
   }, [value])
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   return (
     <div
       onMouseEnter={() => setHovered(true)}
@@ -42,58 +35,34 @@ function ScriptBlock({
         position: 'relative',
         background: hovered ? 'rgba(100, 180, 120, 0.09)' : 'transparent',
         borderRadius: '8px',
-        padding: '12px 16px 16px',
+        padding: '0 16px 16px',
         transition: 'background 0.2s',
-        marginBottom: '4px',
       }}
     >
-      {/* Linha do badge + ícones — altura fixa, só opacity muda */}
+      {/* Badge colado no topo — altura fixa, só opacity muda */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '10px',
         opacity: hovered ? 1 : 0,
         transition: 'opacity 0.2s',
-        height: '28px',
+        height: '32px',
+        display: 'flex',
+        alignItems: 'center',
       }}>
         <span style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '4px',
+          gap: '5px',
           padding: '3px 10px',
-          background: 'rgba(100, 200, 130, 0.12)',
-          border: '0.5px solid rgba(100, 200, 130, 0.25)',
+          background: 'rgba(100, 200, 130, 0.15)',
+          border: '0.5px solid rgba(100, 200, 130, 0.3)',
           borderRadius: '99px',
           fontSize: '10px',
           fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.8px',
-          color: 'rgba(100, 200, 130, 0.9)',
+          color: 'rgba(120, 210, 150, 0.95)',
         }}>
           {emoji} {label}
         </span>
-
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button onClick={handleCopy} title="Copiar" style={{
-            width: '26px', height: '26px', borderRadius: '6px',
-            background: 'rgba(255,255,255,0.06)',
-            border: '0.5px solid rgba(255,255,255,0.1)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: copied ? '#4ecda4' : 'rgba(255,255,255,0.5)',
-          }}>
-            {copied ? <Check size={12} /> : <Copy size={12} />}
-          </button>
-          <button onClick={() => onChange('')} title="Limpar" style={{
-            width: '26px', height: '26px', borderRadius: '6px',
-            background: 'rgba(255,255,255,0.06)',
-            border: '0.5px solid rgba(255,255,255,0.1)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'rgba(255,255,255,0.5)',
-          }}>
-            <X size={12} />
-          </button>
-        </div>
       </div>
 
       <textarea
