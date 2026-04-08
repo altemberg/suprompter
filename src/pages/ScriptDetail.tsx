@@ -55,8 +55,7 @@ function ScriptBlock({
         marginBottom: '10px',
         opacity: hovered ? 1 : 0,
         transition: 'opacity 0.2s',
-        height: '24px',
-        overflow: 'hidden',
+        height: '28px',
       }}>
         <span style={{
           display: 'inline-flex',
