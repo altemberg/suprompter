@@ -1,4 +1,5 @@
-export type Format = 'reels' | 'youtube'
+export type Format = 'reels' | 'youtube' | 'vsl'
+export type Objetivo = 'educar' | 'vender' | 'autoridade' | 'viralizar'
 
 export interface Posicionamento {
   id: string
@@ -19,6 +20,7 @@ export interface Script {
   gancho: string
   desenvolvimento: string
   cta: string
+  objetivo: Objetivo
   posicionamento_id: string | null
   video_url: string | null
   transcricao: string | null

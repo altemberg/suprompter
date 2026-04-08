@@ -4,7 +4,7 @@ import { Loader2, Save, Video, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { generateScriptFromContext, parseRoteiro } from '@/lib/claude'
 import { transcribeFromUrl } from '@/lib/whisper'
-import type { Posicionamento } from '@/types'
+import type { Posicionamento, Objetivo } from '@/types'
 
 export function ScriptDetail() {
   const { id } = useParams<{ id: string }>()
@@ -12,7 +12,8 @@ export function ScriptDetail() {
 
   // ── Dados do roteiro ──
   const [title, setTitle] = useState('Novo Roteiro')
-  const [format, setFormat] = useState<'reels' | 'youtube'>('reels')
+  const [format, setFormat] = useState<'reels' | 'youtube' | 'vsl'>('reels')
+  const [objetivo, setObjetivo] = useState<Objetivo>('educar')
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [saving, setSaving] = useState(false)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -51,6 +52,7 @@ export function ScriptDetail() {
           if (!data) return
           setTitle(data.title)
           setFormat(data.format)
+          if (data.objetivo) setObjetivo(data.objetivo)
           setPosicionamentoId(data.posicionamento_id ?? null)
           setVideoUrl(data.video_url ?? '')
           setVideoAtivo(!!data.video_url)
@@ -72,6 +74,7 @@ export function ScriptDetail() {
     const payload: Record<string, unknown> = {
       title,
       format,
+      objetivo,
       posicionamento_id: posicionamentoId,
       video_url: videoAtivo ? videoUrl : null,
       transcricao,
@@ -96,7 +99,7 @@ export function ScriptDetail() {
 
     setSavedAt(new Date())
     setSaving(false)
-  }, [title, format, posicionamentoId, videoAtivo, videoUrl, transcricao, informacoesExtras, gancho, desenvolvimento, cta, id, navigate])
+  }, [title, format, objetivo, posicionamentoId, videoAtivo, videoUrl, transcricao, informacoesExtras, gancho, desenvolvimento, cta, id, navigate])
 
   const triggerAutoSave = useCallback(() => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
@@ -137,6 +140,7 @@ export function ScriptDetail() {
           transcricao,
           informacoesExtras,
           formato: format,
+          objetivo,
         },
         (chunk) => {
           textoCompleto += chunk
@@ -179,22 +183,52 @@ export function ScriptDetail() {
             }}
             placeholder="Título do roteiro"
           />
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {(['reels', 'youtube'] as const).map(f => (
-              <button key={f} onClick={() => { setFormat(f); triggerAutoSave() }} style={{
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {([
+              { value: 'reels', label: 'Vídeo Curto' },
+              { value: 'youtube', label: 'YouTube' },
+              { value: 'vsl', label: 'VSL' },
+            ] as const).map(f => (
+              <button key={f.value} onClick={() => { setFormat(f.value); triggerAutoSave() }} style={{
                 padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 500,
                 border: '0.5px solid',
-                background: format === f ? 'rgba(127,119,221,0.15)' : 'transparent',
-                borderColor: format === f ? 'rgba(127,119,221,0.3)' : 'rgba(255,255,255,0.08)',
-                color: format === f ? '#a9a3f0' : 'rgba(255,255,255,0.35)',
+                background: format === f.value ? 'rgba(127,119,221,0.15)' : 'transparent',
+                borderColor: format === f.value ? 'rgba(127,119,221,0.3)' : 'rgba(255,255,255,0.08)',
+                color: format === f.value ? '#a9a3f0' : 'rgba(255,255,255,0.35)',
                 cursor: 'pointer',
               }}>
-                {f === 'reels' ? 'Reels' : 'YouTube'}
+                {f.label}
               </button>
             ))}
             <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)', marginLeft: 'auto' }}>
               {saving ? 'Salvando...' : savedAt ? `Salvo às ${savedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
             </span>
+          </div>
+
+          {/* Objetivo */}
+          <div style={{ marginTop: '14px' }}>
+            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Objetivo do conteúdo
+            </p>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {([
+                { value: 'educar', label: '📚 Educar' },
+                { value: 'vender', label: '💰 Vender' },
+                { value: 'autoridade', label: '🏆 Autoridade' },
+                { value: 'viralizar', label: '🚀 Viralizar' },
+              ] as const).map(o => (
+                <button key={o.value} onClick={() => { setObjetivo(o.value); triggerAutoSave() }} style={{
+                  padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 500,
+                  border: '0.5px solid',
+                  background: objetivo === o.value ? 'rgba(255,165,0,0.12)' : 'transparent',
+                  borderColor: objetivo === o.value ? 'rgba(255,165,0,0.3)' : 'rgba(255,255,255,0.08)',
+                  color: objetivo === o.value ? 'rgba(255,200,80,0.9)' : 'rgba(255,255,255,0.35)',
+                  cursor: 'pointer',
+                }}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
