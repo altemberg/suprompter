@@ -44,8 +44,8 @@ function ScriptBlock({
         position: 'relative',
         background: hovered ? 'rgba(100, 180, 120, 0.09)' : 'transparent',
         borderRadius: '8px',
-        padding: hovered ? '12px 16px 16px' : '0px 0px 4px',
-        transition: 'background 0.2s, padding 0.2s',
+        padding: '12px 16px 16px',
+        transition: 'background 0.2s',
         marginBottom: '4px',
       }}
     >
@@ -104,7 +104,7 @@ function ScriptBlock({
         onChange={e => onChange(e.target.value)}
         style={{
           width: '100%',
-          minHeight: `${minHeight}px`,
+          minHeight: '1px',
           background: 'transparent',
           border: 'none',
           outline: 'none',

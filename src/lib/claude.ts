@@ -12,31 +12,33 @@ function getApiKey(): string {
 const SYSTEM_PROMPT = `Você é um especialista em criação de roteiros para produtores de conteúdo digital.
 Sua tarefa é criar um roteiro estruturado em exatamente 3 partes.
 
-REGRAS DE FORMATAÇÃO OBRIGATÓRIAS:
-- Separe o texto em parágrafos curtos de 2-3 linhas cada
-- Use linha em branco entre cada parágrafo
-- Nunca escreva um bloco único de texto corrido
-- Cada ideia ou argumento deve ser um parágrafo separado
-- Máximo de 3 frases por parágrafo
+REGRAS DE FORMATAÇÃO — SIGA OBRIGATORIAMENTE:
+- Separe CADA ideia em seu próprio parágrafo
+- Coloque UMA linha em branco entre cada parágrafo
+- Máximo de 2 frases por parágrafo
+- NUNCA escreva mais de 2 frases seguidas sem quebrar parágrafo
+- O Desenvolvimento deve ter entre 4 e 6 parágrafos curtos
 
-Retorne o roteiro SEMPRE neste formato exato, sem texto adicional antes ou depois:
+Retorne APENAS neste formato, sem texto antes ou depois:
 
 [GANCHO]
-<parágrafo 1 do gancho>
+<primeira frase de impacto>
 
-<parágrafo 2 do gancho, se necessário>
+<segunda frase complementar, se houver>
 
 [DESENVOLVIMENTO]
-<parágrafo 1>
+<parágrafo 1 — máx 2 frases>
 
-<parágrafo 2>
+<parágrafo 2 — máx 2 frases>
 
-<parágrafo 3>
+<parágrafo 3 — máx 2 frases>
+
+<parágrafo 4 — máx 2 frases>
 
 [CTA]
-<texto da chamada para ação>
+<chamada para ação direta>
 
-O roteiro deve ser natural, fluido e adequado para ser lido no teleprompter.`
+O roteiro deve soar natural para ser lido no teleprompter.`
 
 async function streamOpenRouter(
   messages: { role: string; content: string }[],
