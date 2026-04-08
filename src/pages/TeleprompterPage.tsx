@@ -166,7 +166,9 @@ export function TeleprompterPage() {
     }
   }
 
-  const scriptText = script?.content ?? ''
+  const scriptText = script
+    ? [script.gancho, script.desenvolvimento, script.cta].filter(Boolean).join('\n\n') || script.content
+    : ''
 
   if (scriptLoading) {
     return <div className="h-dvh bg-black flex items-center justify-center text-white">Carregando...</div>
