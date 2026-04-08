@@ -2,10 +2,99 @@ import { useState, useRef } from 'react'
 import { transcribeAudio, transcribeFromUrl, extractAudioFromVideo } from '@/lib/whisper'
 import type { TranscriptionResult } from '@/lib/whisper'
 import { looksLikeVideoUrl } from '@/lib/video-download'
-import { Upload, Link, Copy, Check, Download } from 'lucide-react'
+import { Upload, Link, Copy, Check, Download, ExternalLink } from 'lucide-react'
 
 type Stage = 'idle' | 'processing' | 'done' | 'error'
 type Tab = 'file' | 'url'
+
+function VideoEmbed({ url }: { url: string }) {
+  const isYoutube = /youtube\.com|youtu\.be/.test(url)
+  const isInstagram = /instagram\.com\/(reel|p)\//.test(url)
+
+  if (isYoutube) {
+    const ytMatch = url.match(
+      /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+    )
+    const embedUrl = ytMatch
+      ? `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1`
+      : null
+
+    if (!embedUrl) return null
+
+    return (
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        paddingTop: '56.25%',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        background: '#000',
+        marginBottom: '16px',
+      }}>
+        <iframe
+          src={embedUrl}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    )
+  }
+
+  if (isInstagram) {
+    return (
+      <div
+        style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}
+        ref={(el) => {
+          if (!el) return
+          if (!(window as { instgrm?: { Embeds: { process: () => void } } }).instgrm) {
+            const script = document.createElement('script')
+            script.src = '//www.instagram.com/embed.js'
+            script.async = true
+            document.body.appendChild(script)
+          } else {
+            (window as { instgrm: { Embeds: { process: () => void } } }).instgrm.Embeds.process()
+          }
+        }}
+      >
+        <blockquote
+          className="instagram-media"
+          data-instgrm-permalink={url}
+          data-instgrm-version="14"
+          style={{ maxWidth: '400px', width: '100%', minWidth: '326px', margin: '0 auto' }}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      background: '#161616',
+      border: '0.5px solid rgba(255,255,255,0.07)',
+      borderRadius: '12px',
+      padding: '20px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      marginBottom: '16px',
+    }}>
+      <ExternalLink size={16} color="rgba(255,255,255,0.4)" />
+      <div>
+        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '2px' }}>
+          Preview não disponível para esta plataforma
+        </p>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: '12px', color: '#a9a3f0', textDecoration: 'none' }}
+        >
+          Abrir no app original →
+        </a>
+      </div>
+    </div>
+  )
+}
 
 export function Transcriber() {
   const [tab, setTab] = useState<Tab>('file')
@@ -13,6 +102,7 @@ export function Transcriber() {
   const [stage, setStage] = useState<Stage>('idle')
   const [progressMsg, setProgressMsg] = useState('')
   const [result, setResult] = useState<TranscriptionResult | null>(null)
+  const [transcribedUrl, setTranscribedUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [showSegments, setShowSegments] = useState(false)
@@ -45,6 +135,7 @@ export function Transcriber() {
     try {
       const transcription = await transcribeFromUrl(url, setProgressMsg)
       setResult(transcription)
+      setTranscribedUrl(url)
       setStage('done')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
@@ -231,6 +322,9 @@ export function Transcriber() {
       {/* Resultado */}
       {stage === 'done' && result && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+          {/* Preview do vídeo */}
+          {transcribedUrl && <VideoEmbed url={transcribedUrl} />}
 
           {/* Meta info */}
           {result.duration && (
