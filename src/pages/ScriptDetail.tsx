@@ -47,50 +47,51 @@ function ScriptBlock({
         marginBottom: '4px',
       }}
     >
-      {/* Label — só no hover */}
+      {/* Linha do badge + ícones — altura fixa, só opacity muda */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: hovered ? '10px' : '0',
-        height: hovered ? 'auto' : '0',
-        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '10px',
         opacity: hovered ? 1 : 0,
-        transition: 'opacity 0.2s, height 0.2s, margin 0.2s',
+        transition: 'opacity 0.2s',
+        height: '24px',
+        overflow: 'hidden',
       }}>
         <span style={{
-          fontSize: '10px', fontWeight: 700,
-          textTransform: 'uppercase', letterSpacing: '1px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '3px 10px',
+          background: 'rgba(100, 200, 130, 0.12)',
+          border: '0.5px solid rgba(100, 200, 130, 0.25)',
+          borderRadius: '99px',
+          fontSize: '10px',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.8px',
           color: 'rgba(100, 200, 130, 0.9)',
         }}>
           {emoji} {label}
         </span>
 
         <div style={{ display: 'flex', gap: '4px' }}>
-          <button
-            onClick={handleCopy}
-            title="Copiar"
-            style={{
-              width: '26px', height: '26px', borderRadius: '6px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '0.5px solid rgba(255,255,255,0.1)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center',
-              justifyContent: 'center',
-              color: copied ? '#4ecda4' : 'rgba(255,255,255,0.5)',
-            }}
-          >
+          <button onClick={handleCopy} title="Copiar" style={{
+            width: '26px', height: '26px', borderRadius: '6px',
+            background: 'rgba(255,255,255,0.06)',
+            border: '0.5px solid rgba(255,255,255,0.1)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: copied ? '#4ecda4' : 'rgba(255,255,255,0.5)',
+          }}>
             {copied ? <Check size={12} /> : <Copy size={12} />}
           </button>
-          <button
-            onClick={() => onChange('')}
-            title="Limpar"
-            style={{
-              width: '26px', height: '26px', borderRadius: '6px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '0.5px solid rgba(255,255,255,0.1)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center',
-              justifyContent: 'center',
-              color: 'rgba(255,255,255,0.5)',
-            }}
-          >
+          <button onClick={() => onChange('')} title="Limpar" style={{
+            width: '26px', height: '26px', borderRadius: '6px',
+            background: 'rgba(255,255,255,0.06)',
+            border: '0.5px solid rgba(255,255,255,0.1)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'rgba(255,255,255,0.5)',
+          }}>
             <X size={12} />
           </button>
         </div>
@@ -611,7 +612,6 @@ export function ScriptDetail() {
               onChange={(v) => { setGancho(v); triggerAutoSave() }}
             />
 
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '8px 0' }} />
 
             <ScriptBlock
               label="Desenvolvimento" emoji="📖"
@@ -619,7 +619,6 @@ export function ScriptDetail() {
               onChange={(v) => { setDesenvolvimento(v); triggerAutoSave() }}
             />
 
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '8px 0' }} />
 
             <ScriptBlock
               label="Chamada para Ação" emoji="📣"
