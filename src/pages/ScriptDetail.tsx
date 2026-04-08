@@ -7,10 +7,17 @@ import { transcribeFromUrl } from '@/lib/whisper'
 import type { Posicionamento, Objetivo } from '@/types'
 
 function ScriptBlock({
-  label, emoji, value, onChange, minHeight, accentColor, bgColor,
+  label,
+  emoji,
+  value,
+  onChange,
+  minHeight,
 }: {
-  label: string; emoji: string; value: string; onChange: (v: string) => void
-  minHeight: number; accentColor: string; bgColor: string
+  label: string
+  emoji: string
+  value: string
+  onChange: (v: string) => void
+  minHeight: number
 }) {
   const [hovered, setHovered] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -35,37 +42,81 @@ function ScriptBlock({
       onMouseLeave={() => setHovered(false)}
       style={{
         position: 'relative',
-        background: hovered ? bgColor : 'transparent',
-        border: `0.5px solid ${hovered ? accentColor.replace(/[\d.]+\)$/, '0.2)') : 'rgba(255,255,255,0.05)'}`,
-        borderRadius: '12px',
-        padding: '16px 20px 20px',
-        transition: 'background 0.2s, border-color 0.2s',
+        background: hovered ? 'rgba(100, 180, 120, 0.09)' : 'transparent',
+        borderRadius: '8px',
+        padding: hovered ? '12px 16px 16px' : '0px 0px 4px',
+        transition: 'background 0.2s, padding 0.2s',
+        marginBottom: '4px',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-        <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: accentColor }}>
+      {/* Label — só no hover */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: hovered ? '10px' : '0',
+        height: hovered ? 'auto' : '0',
+        overflow: 'hidden',
+        opacity: hovered ? 1 : 0,
+        transition: 'opacity 0.2s, height 0.2s, margin 0.2s',
+      }}>
+        <span style={{
+          fontSize: '10px', fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: '1px',
+          color: 'rgba(100, 200, 130, 0.9)',
+        }}>
           {emoji} {label}
         </span>
-        <div style={{ display: 'flex', gap: '4px', opacity: hovered ? 1 : 0, transition: 'opacity 0.15s', pointerEvents: hovered ? 'auto' : 'none' }}>
-          <button onClick={handleCopy} title="Copiar" style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: copied ? '#4ecda4' : 'rgba(255,255,255,0.5)' }}>
+
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <button
+            onClick={handleCopy}
+            title="Copiar"
+            style={{
+              width: '26px', height: '26px', borderRadius: '6px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '0.5px solid rgba(255,255,255,0.1)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'center',
+              color: copied ? '#4ecda4' : 'rgba(255,255,255,0.5)',
+            }}
+          >
             {copied ? <Check size={12} /> : <Copy size={12} />}
           </button>
-          <button onClick={() => onChange('')} title="Limpar" style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)' }}>
+          <button
+            onClick={() => onChange('')}
+            title="Limpar"
+            style={{
+              width: '26px', height: '26px', borderRadius: '6px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '0.5px solid rgba(255,255,255,0.1)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'center',
+              color: 'rgba(255,255,255,0.5)',
+            }}
+          >
             <X size={12} />
           </button>
         </div>
       </div>
+
       <textarea
         ref={textareaRef}
         value={value}
         onChange={e => onChange(e.target.value)}
         style={{
-          width: '100%', minHeight: `${minHeight}px`,
-          background: 'transparent', border: 'none', outline: 'none',
-          resize: 'none', overflow: 'hidden',
+          width: '100%',
+          minHeight: `${minHeight}px`,
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          resize: 'none',
+          overflow: 'hidden',
           fontFamily: 'Georgia, "Times New Roman", serif',
-          fontSize: '15px', lineHeight: '1.75',
-          color: 'rgba(255,255,255,0.85)', padding: 0, letterSpacing: '0.01em',
+          fontSize: '15px',
+          lineHeight: '1.85',
+          color: 'rgba(255,255,255,0.85)',
+          padding: 0,
+          letterSpacing: '0.01em',
+          whiteSpace: 'pre-wrap',
         }}
       />
     </div>
@@ -561,24 +612,24 @@ export function ScriptDetail() {
               value={gancho}
               onChange={(v) => { setGancho(v); triggerAutoSave() }}
               minHeight={80}
-              accentColor="rgba(160, 150, 255, 0.8)"
-              bgColor="rgba(127, 119, 221, 0.07)"
             />
+
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '8px 0' }} />
+
             <ScriptBlock
               label="Desenvolvimento" emoji="📖"
               value={desenvolvimento}
               onChange={(v) => { setDesenvolvimento(v); triggerAutoSave() }}
               minHeight={160}
-              accentColor="rgba(160, 150, 255, 0.8)"
-              bgColor="rgba(127, 119, 221, 0.07)"
             />
+
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '8px 0' }} />
+
             <ScriptBlock
               label="Chamada para Ação" emoji="📣"
               value={cta}
               onChange={(v) => { setCta(v); triggerAutoSave() }}
               minHeight={80}
-              accentColor="rgba(160, 150, 255, 0.8)"
-              bgColor="rgba(127, 119, 221, 0.07)"
             />
           </div>
         )}
