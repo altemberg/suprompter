@@ -143,59 +143,32 @@ def download_audio(audio_url: str, original_url: str = "") -> str:
 
 
 def transcribe_with_whisper(tmp_path: str, api_key: str) -> dict:
-    """Envia o arquivo de áudio para o Whisper via OpenRouter."""
-    filename = os.path.basename(tmp_path)
-    boundary = "----WkFormBoundary7MA4YWxkTrZu0gW"
+    """Envia o arquivo de áudio para o Whisper via OpenRouter usando requests."""
+    import requests
 
     with open(tmp_path, "rb") as f:
-        audio_data = f.read()
+        response = requests.post(
+            "https://openrouter.ai/api/v1/audio/transcriptions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "HTTP-Referer": "https://suprompter.vercel.app",
+                "X-Title": "Suprompter",
+            },
+            files={
+                "file": (os.path.basename(tmp_path), f, "audio/mpeg"),
+            },
+            data={
+                "model": "openai/whisper-1",
+                "language": "pt",
+                "response_format": "verbose_json",
+            },
+            timeout=120,
+        )
 
-    ext = os.path.splitext(tmp_path)[1].lower()
-    mime_map = {
-        ".mp3": "audio/mpeg",
-        ".m4a": "audio/mp4",
-        ".webm": "audio/webm",
-        ".ogg": "audio/ogg",
-        ".wav": "audio/wav",
-    }
-    mime = mime_map.get(ext, "audio/mpeg")
+    if not response.ok:
+        raise Exception(f"Whisper erro {response.status_code}: {response.text}")
 
-    def field(name, value):
-        return (
-            f"--{boundary}\r\n"
-            f'Content-Disposition: form-data; name="{name}"\r\n\r\n'
-            f"{value}\r\n"
-        ).encode()
-
-    def file_field(name, fname, fmime, data):
-        return (
-            f"--{boundary}\r\n"
-            f'Content-Disposition: form-data; name="{name}"; filename="{fname}"\r\n'
-            f"Content-Type: {fmime}\r\n\r\n"
-        ).encode() + data + b"\r\n"
-
-    body = (
-        file_field("file", filename, mime, audio_data)
-        + field("model", "openai/whisper-1")
-        + field("language", "pt")
-        + field("response_format", "verbose_json")
-        + f"--{boundary}--\r\n".encode()
-    )
-
-    req = urllib.request.Request(
-        "https://openrouter.ai/api/v1/audio/transcriptions",
-        data=body,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "HTTP-Referer": "https://suprompter.vercel.app",
-            "X-Title": "Suprompter",
-        },
-        method="POST",
-    )
-
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        return json.loads(resp.read())
+    return response.json()
 
 
 class handler(BaseHTTPRequestHandler):
