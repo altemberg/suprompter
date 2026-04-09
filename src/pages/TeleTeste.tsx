@@ -62,9 +62,9 @@ export function TeleTeste() {
   const [roteiro, setRoteiro] = useState('')
   const [erro, setErro] = useState('')
 
-  const { canvasStream, videoRef, canvasRef, error: cameraError, startCamera, stopCamera } = useCamera()
-  const { isRecording, startRecording, stopRecording, downloadUrl, fileName } = useMediaRecorder(canvasStream, 'teleteste')
-  const { isPlaying, toggle, reset, progress, scrollRef } = useTeleprompter(4)
+  const { stream, videoRef, error: cameraError, startCamera, stopCamera } = useCamera()
+  const { isRecording, stage: recStage, progress, downloadUrl, fileName, startRecording, stopRecording } = useMediaRecorder(stream, 'teleteste')
+  const { isPlaying, toggle, reset, progress: scrollProgress, scrollRef } = useTeleprompter(4)
 
   useEffect(() => {
     async function init() {
@@ -86,8 +86,8 @@ export function TeleTeste() {
   }, [startCamera, stopCamera])
 
   useEffect(() => {
-    if (downloadUrl && fileName) setStage('done')
-  }, [downloadUrl, fileName])
+    if (recStage === 'done') setStage('done')
+  }, [recStage])
 
   useEffect(() => {
     if (cameraError) {
@@ -106,13 +106,21 @@ export function TeleTeste() {
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Vídeo oculto — alimenta o canvas */}
-      <video ref={videoRef} autoPlay muted playsInline style={{ display: 'none' }} />
-
-      {/* Canvas — preview e fonte da gravação */}
-      <canvas
-        ref={canvasRef}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: '#000' }}
+      {/* Vídeo — preview da câmera (espelhado via CSS) */}
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        playsInline
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          transform: 'scaleX(-1)',
+          background: '#000',
+        }}
       />
 
       {/* Badge TeleTeste */}
@@ -177,6 +185,31 @@ export function TeleTeste() {
         </div>
       )}
 
+      {/* Upload/processamento */}
+      {(recStage === 'uploading' || recStage === 'processing') && (
+        <div style={{
+          position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: '16px', zIndex: 20, padding: '32px',
+        }}>
+          <div style={{
+            width: '40px', height: '40px', borderRadius: '50%',
+            border: '2px solid rgba(255,200,80,0.3)', borderTopColor: '#ffc844',
+            animation: 'spin 0.8s linear infinite',
+          }} />
+          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
+            {recStage === 'uploading' ? `Enviando para processar... ${progress}%` : 'Processando vídeo...'}
+          </p>
+          <div style={{ width: '200px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '99px' }}>
+            <div style={{ height: '100%', background: '#ffc844', borderRadius: '99px', width: `${progress}%`, transition: 'width 0.3s' }} />
+          </div>
+          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>
+            O vídeo está sendo rotacionado e otimizado
+          </p>
+        </div>
+      )}
+
       {/* Overlay teleprompter — ready ou recording */}
       {(stage === 'ready' || stage === 'recording') && roteiro && (
         <div style={{
@@ -188,7 +221,7 @@ export function TeleTeste() {
         }}>
           {/* Barra de progresso */}
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.1)' }}>
-            <div style={{ height: '100%', background: '#ffc844', width: `${progress * 100}%`, transition: 'width 0.3s' }} />
+            <div style={{ height: '100%', background: '#ffc844', width: `${scrollProgress * 100}%`, transition: 'width 0.3s' }} />
           </div>
 
           {/* Texto rolando */}

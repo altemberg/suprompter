@@ -31,9 +31,9 @@ export function TeleprompterPage() {
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { devices: audioDevices, selectedDeviceId, setSelectedDeviceId } = useAudioDevices()
-  const { canvasStream, videoRef, canvasRef, error: cameraError, startCamera, stopCamera } = useCamera()
-  const { isRecording, ffmpegReady, downloadUrl, fileName, processing, processingProgress, startRecording, stopRecording, clearRecording } = useMediaRecorder(canvasStream, script?.title)
-  const { isPlaying, progress, play, pause, toggle, reset, scrollRef } = useTeleprompter(speed)
+  const { stream, videoRef, error: cameraError, startCamera, stopCamera } = useCamera()
+  const { isRecording, stage, progress, downloadUrl, fileName, startRecording, stopRecording, clearRecording } = useMediaRecorder(stream, script?.title)
+  const { isPlaying, progress: scrollProgress, play, pause, toggle, reset, scrollRef } = useTeleprompter(speed)
 
   // Carrega todos os roteiros do usuário
   useEffect(() => {
@@ -64,7 +64,7 @@ export function TeleprompterPage() {
     return () => { cancelled = true }
   }, [scriptId])
 
-  // Inicia câmera apenas após o script (se houver) ter carregado.
+  // Inicia câmera após o script (se houver) ter carregado.
   // Reinicia automaticamente se o dispositivo de áudio mudar.
   useEffect(() => {
     if (scriptLoading) return
@@ -72,7 +72,7 @@ export function TeleprompterPage() {
     return () => { stopCamera() }
   }, [startCamera, stopCamera, isMobile, scriptLoading, selectedDeviceId])
 
-  // Cleanup ao desmontar (controles e timer)
+  // Cleanup ao desmontar
   useEffect(() => {
     return () => {
       if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current)
@@ -86,7 +86,6 @@ export function TeleprompterPage() {
     controlsTimerRef.current = setTimeout(() => setShowControls(false), 3000)
   }
 
-  // Toggle de gravação unificado (usado pelo Controls via onToggleRecord)
   function handleToggleRecord() {
     if (isRecording) {
       handleStopRecording()
@@ -198,23 +197,31 @@ export function TeleprompterPage() {
       onMouseMove={handleActivity}
       onTouchStart={handleActivity}
     >
-      {/* Video invisível — alimenta o canvas */}
-      <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
-
-      {/* Canvas — preview visual (já com frame correto) e fonte da gravação */}
-      <canvas
-        ref={canvasRef}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: '#000' }}
+      {/* Vídeo — preview da câmera (espelhado via CSS) */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          transform: 'scaleX(-1)',
+          background: '#000',
+        }}
       />
 
       {/* Barra de progresso */}
-      <ProgressBar progress={progress} />
+      <ProgressBar progress={scrollProgress} />
 
-      {/* Banner de download / processamento */}
-      {(processing || downloadUrl) && (
+      {/* Banner de upload/download */}
+      {(stage === 'uploading' || stage === 'processing' || stage === 'done') && (
         <DownloadBanner
-          processing={processing}
-          processingProgress={processingProgress}
+          stage={stage}
+          progress={progress}
           downloadUrl={downloadUrl}
           fileName={fileName}
           onDiscard={handleDiscard}
@@ -272,8 +279,7 @@ export function TeleprompterPage() {
       <Controls
         isPlaying={isPlaying}
         isRecording={isRecording}
-        processing={processing}
-        ffmpegReady={ffmpegReady}
+        stage={stage}
         downloadUrl={downloadUrl}
         speed={speed}
         fontSize={fontSize}

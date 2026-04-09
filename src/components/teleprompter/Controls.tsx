@@ -4,6 +4,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select'
+import type { RecordingStage } from '@/hooks/useMediaRecorder'
 
 const SPEED_OPTIONS = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
 const FONT_OPTIONS = [24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96]
@@ -16,8 +17,7 @@ interface ScriptOption {
 interface ControlsProps {
   isPlaying: boolean
   isRecording: boolean
-  processing: boolean
-  ffmpegReady: boolean
+  stage: RecordingStage
   downloadUrl: string | null
   speed: number
   fontSize: number
@@ -37,8 +37,7 @@ interface ControlsProps {
 export function Controls({
   isPlaying,
   isRecording,
-  processing,
-  ffmpegReady,
+  stage,
   downloadUrl,
   speed,
   fontSize,
@@ -54,6 +53,8 @@ export function Controls({
   onSelectScript,
   onBack,
 }: ControlsProps) {
+  const isBusy = stage === 'uploading' || stage === 'processing'
+
   return (
     <div
       style={{
@@ -160,22 +161,22 @@ export function Controls({
         {/* Record / Stop */}
         <button
           onClick={onToggleRecord}
-          disabled={processing || !ffmpegReady}
+          disabled={isBusy}
           style={{
             ...styles.primaryBtn,
             background: isRecording ? 'rgba(229,62,62,0.25)' : 'rgba(255,255,255,0.1)',
             border: isRecording ? '1px solid rgba(229,62,62,0.6)' : '1px solid transparent',
-            opacity: (processing || !ffmpegReady) ? 0.5 : 1,
-            cursor: (processing || !ffmpegReady) ? 'not-allowed' : 'pointer',
+            opacity: isBusy ? 0.5 : 1,
+            cursor: isBusy ? 'not-allowed' : 'pointer',
           }}
           title="Gravar (R)"
         >
-          {!ffmpegReady ? (
+          {isBusy ? (
             <>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
-              <span>Preparando...</span>
+              <span>{stage === 'uploading' ? 'Enviando...' : 'Processando...'}</span>
             </>
           ) : isRecording ? (
             <>
@@ -280,19 +281,5 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--accent)',
     animation: 'blink 1s ease-in-out infinite',
     flexShrink: 0,
-  },
-  downloadBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '7px',
-    padding: '10px 18px',
-    minHeight: '44px',
-    borderRadius: '24px',
-    background: 'rgba(56,161,105,0.2)',
-    border: '1px solid rgba(56,161,105,0.5)',
-    color: '#68d391',
-    fontSize: '0.9rem',
-    fontWeight: 500,
-    textDecoration: 'none',
   },
 }

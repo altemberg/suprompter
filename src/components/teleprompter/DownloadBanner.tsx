@@ -1,22 +1,23 @@
-import type { ProcessingProgress } from '@/lib/ffmpeg'
+import type { RecordingStage } from '@/hooks/useMediaRecorder'
 
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
 
 interface DownloadBannerProps {
-  processing: boolean
-  processingProgress: ProcessingProgress | null
+  stage: RecordingStage
+  progress: number
   downloadUrl: string | null
   fileName: string | null
   onDiscard: () => void
 }
 
 export function DownloadBanner({
-  processing,
-  processingProgress,
+  stage,
+  progress,
   downloadUrl,
   fileName,
   onDiscard,
 }: DownloadBannerProps) {
+  const isProcessing = stage === 'uploading' || stage === 'processing'
 
   return (
     <div style={{
@@ -25,7 +26,7 @@ export function DownloadBanner({
       left: 0,
       right: 0,
       zIndex: 50,
-      background: processing
+      background: isProcessing
         ? 'rgba(20, 20, 30, 0.97)'
         : 'rgba(22, 101, 52, 0.92)',
       backdropFilter: 'blur(8px)',
@@ -37,25 +38,24 @@ export function DownloadBanner({
       gap: '10px',
     }}>
 
-      {processing ? (
+      {isProcessing ? (
         <>
           <p style={{ fontSize: '14px', fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>
-            {processingProgress?.message ?? 'Processando vídeo...'}
+            {stage === 'uploading' ? `Enviando vídeo... ${progress}%` : 'Processando vídeo...'}
           </p>
 
-          {/* Barra de progresso */}
           <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: '99px', height: '4px', overflow: 'hidden', width: '100%', maxWidth: '320px' }}>
             <div style={{
               height: '100%',
               borderRadius: '99px',
               background: '#a9a3f0',
-              width: `${processingProgress?.progress ?? 0}%`,
+              width: `${progress}%`,
               transition: 'width 0.3s ease',
             }} />
           </div>
 
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
-            Melhorando qualidade de áudio e vídeo...
+            {stage === 'uploading' ? 'Enviando para o servidor...' : 'Corrigindo rotação e otimizando...'}
           </p>
         </>
       ) : (
