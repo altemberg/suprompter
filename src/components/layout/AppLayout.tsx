@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { Menu, Home, FileText, Video, Film, Settings } from 'lucide-react'
+import { Menu, Home, FileText, Video, Film, Settings, Captions, FlaskConical } from 'lucide-react'
 import { AppSidebar } from './AppSidebar'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -47,7 +47,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <Menu size={20} strokeWidth={1.8} />
           </button>
           <span style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '-0.3px', color: 'white' }}>
-            Su<span style={{ color: '#a9a3f0' }}>prompter</span>
+            Opini<span style={{ color: '#a9a3f0' }}>fy</span>
           </span>
         </div>
 
@@ -82,11 +82,12 @@ export function AppLayout({ children }: AppLayoutProps) {
 }
 
 const mobileNavItems = [
-  { label: 'Início', icon: Home, to: '/' },
-  { label: 'Roteiros', icon: FileText, to: '/roteiros' },
-  { label: 'Teleprompter', icon: Video, to: '/teleprompter' },
-  { label: 'Gravações', icon: Film, to: '/gravacoes' },
-  { label: 'Configurações', icon: Settings, to: '/configuracoes' },
+  { label: 'Início', icon: Home, to: '/', experimental: false },
+  { label: 'Roteiros', icon: FileText, to: '/roteiros', experimental: false },
+  { label: 'Teleprompter', icon: Video, to: '/teleprompter', experimental: false },
+  { label: 'Gravações', icon: Film, to: '/gravacoes', experimental: false },
+  { label: 'Transcritor', icon: Captions, to: '/transcritor', experimental: false },
+  { label: 'TeleTeste', icon: FlaskConical, to: '/teleteste', experimental: true },
 ]
 
 function MobileNav({ onClose }: { onClose: () => void }) {
@@ -108,7 +109,7 @@ function MobileNav({ onClose }: { onClose: () => void }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#111111' }}>
       <div style={{ padding: '20px 16px', borderBottom: '0.5px solid rgba(255,255,255,0.07)' }}>
         <span style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '-0.3px', color: 'white' }}>
-          Su<span style={{ color: '#a9a3f0' }}>prompter</span>
+          Opini<span style={{ color: '#a9a3f0' }}>fy</span>
         </span>
       </div>
 
@@ -117,6 +118,9 @@ function MobileNav({ onClose }: { onClose: () => void }) {
           const isActive = item.to === '/'
             ? currentPath === '/'
             : currentPath.startsWith(item.to)
+          const activeColor = item.experimental ? '#ffc844' : '#a9a3f0'
+          const activeBg = item.experimental ? 'rgba(255,200,80,0.1)' : 'rgba(127,119,221,0.15)'
+          const inactiveColor = item.experimental ? 'rgba(255,200,80,0.5)' : 'rgba(255,255,255,0.55)'
           return (
             <button
               key={item.to}
@@ -125,8 +129,8 @@ function MobileNav({ onClose }: { onClose: () => void }) {
                 display: 'flex', alignItems: 'center', gap: '10px',
                 width: '100%', padding: '11px 12px', borderRadius: '8px',
                 fontSize: '14px', marginBottom: '2px', textAlign: 'left',
-                color: isActive ? '#a9a3f0' : 'rgba(255,255,255,0.55)',
-                background: isActive ? 'rgba(127,119,221,0.15)' : 'transparent',
+                color: isActive ? activeColor : inactiveColor,
+                background: isActive ? activeBg : 'transparent',
                 border: 'none', cursor: 'pointer',
                 transition: 'background 0.15s, color 0.15s',
               }}
@@ -138,7 +142,24 @@ function MobileNav({ onClose }: { onClose: () => void }) {
         })}
       </nav>
 
-      <div style={{ padding: '12px 16px', borderTop: '0.5px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ padding: '8px 8px 4px', borderTop: '0.5px solid rgba(255,255,255,0.07)' }}>
+        <button
+          onClick={() => go('/configuracoes')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            width: '100%', padding: '11px 12px', borderRadius: '8px',
+            fontSize: '14px', textAlign: 'left',
+            color: currentPath.startsWith('/configuracoes') ? '#a9a3f0' : 'rgba(255,255,255,0.55)',
+            background: currentPath.startsWith('/configuracoes') ? 'rgba(127,119,221,0.15)' : 'transparent',
+            border: 'none', cursor: 'pointer',
+          }}
+        >
+          <Settings size={16} strokeWidth={1.8} />
+          Configurações
+        </button>
+      </div>
+
+      <div style={{ padding: '8px 16px 16px' }}>
         <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {user?.email}
         </p>
