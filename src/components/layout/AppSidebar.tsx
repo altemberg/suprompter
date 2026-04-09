@@ -1,4 +1,4 @@
-import { Home, FileText, Video, Film, Captions, Settings } from 'lucide-react'
+import { Home, FileText, Video, Film, Captions, Settings, FlaskConical } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Sidebar,
@@ -23,6 +23,10 @@ const navItems = [
   { label: 'Teleprompter', icon: Video, to: '/teleprompter' },
   { label: 'Gravações', icon: Film, to: '/gravacoes' },
   { label: 'Transcritor', icon: Captions, to: '/transcritor' },
+]
+
+const experimentalItems = [
+  { label: 'TeleTeste', icon: FlaskConical, to: '/teleteste' },
 ]
 
 export function AppSidebar({ onNavigate }: AppSidebarProps) {
@@ -69,6 +73,42 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                           gap: '10px',
                           color: isActive ? '#a9a3f0' : 'rgba(255,255,255,0.45)',
                           background: isActive ? 'rgba(127,119,221,0.15)' : 'transparent',
+                          transition: 'background 0.15s, color 0.15s',
+                          width: '100%',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <item.icon size={15} strokeWidth={1.8} />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    )}
+                  </NavLink>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {experimentalItems.map((item) => (
+                <SidebarMenuItem key={item.to}>
+                  <NavLink to={item.to}>
+                    {({ isActive }) => (
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => handleNavigate(item.to)}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          fontSize: '13.5px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          color: isActive ? '#ffc844' : 'rgba(255, 200, 80, 0.5)',
+                          background: isActive ? 'rgba(255, 200, 80, 0.1)' : 'transparent',
                           transition: 'background 0.15s, color 0.15s',
                           width: '100%',
                           border: 'none',

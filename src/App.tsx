@@ -10,6 +10,7 @@ import { Dashboard } from '@/pages/Dashboard'
 import { Scripts } from '@/pages/Scripts'
 import { ScriptDetail } from '@/pages/ScriptDetail'
 import { TeleprompterPage } from '@/pages/TeleprompterPage'
+import { TeleTeste } from '@/pages/TeleTeste'
 import { Recordings } from '@/pages/Recordings'
 import { SettingsPage } from '@/pages/Settings'
 import { Transcriber } from '@/pages/Transcriber'
@@ -33,6 +34,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <TeleprompterPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* TeleTeste — tela cheia, sem sidebar */}
+      <Route
+        path="/teleteste"
+        element={
+          <ProtectedRoute>
+            <TeleTeste />
           </ProtectedRoute>
         }
       />
