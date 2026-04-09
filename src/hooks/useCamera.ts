@@ -36,6 +36,8 @@ export function useCamera(): UseCameraReturn {
         video: {
           facingMode: 'user',
           frameRate: { ideal: 30, max: 30 },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
         },
       })
 
