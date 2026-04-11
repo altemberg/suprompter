@@ -32,7 +32,7 @@ export function TeleprompterPage() {
 
   const { devices: audioDevices, selectedDeviceId, setSelectedDeviceId } = useAudioDevices()
   const { stream, videoRef, error: cameraError, startCamera, stopCamera } = useCamera()
-  const { isRecording, stage, progress, downloadUrl, fileName, startRecording, stopRecording, clearRecording } = useMediaRecorder(stream, script?.title, (script?.format === 'reels' ? 'reels' : 'youtube') ?? (isMobile ? 'reels' : 'youtube'))
+  const { isRecording, stage, progress, downloadUrl, fileName, startRecording, stopRecording, clearRecording } = useMediaRecorder(stream, script?.title, script ? (script.format === 'reels' ? 'reels' : 'youtube') : (isMobile ? 'reels' : 'youtube'))
   const { isPlaying, progress: scrollProgress, play, pause, toggle, reset, scrollRef, handleDragStart, handleDragMove, handleDragEnd } = useTeleprompter(speed)
 
   // Carrega todos os roteiros do usuário
