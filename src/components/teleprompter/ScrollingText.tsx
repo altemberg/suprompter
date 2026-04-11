@@ -2,12 +2,25 @@ interface ScrollingTextProps {
   script: string
   fontSize: number
   scrollRef: React.RefObject<HTMLDivElement | null>
+  onDragStart: (clientY: number) => void
+  onDragMove: (clientY: number) => void
+  onDragEnd: () => void
 }
 
-export function ScrollingText({ script, fontSize, scrollRef }: ScrollingTextProps) {
+export function ScrollingText({ script, fontSize, scrollRef, onDragStart, onDragMove, onDragEnd }: ScrollingTextProps) {
   return (
     <div style={styles.zone}>
-      <div ref={scrollRef} style={styles.scroll}>
+      <div
+        ref={scrollRef}
+        style={styles.scroll}
+        onTouchStart={e => onDragStart(e.touches[0].clientY)}
+        onTouchMove={e => { e.preventDefault(); onDragMove(e.touches[0].clientY) }}
+        onTouchEnd={onDragEnd}
+        onMouseDown={e => onDragStart(e.clientY)}
+        onMouseMove={e => { if (e.buttons === 1) onDragMove(e.clientY) }}
+        onMouseUp={onDragEnd}
+        onMouseLeave={onDragEnd}
+      >
         <div style={styles.spacer} />
         <p style={{ ...styles.text, fontSize: `${fontSize}px` }}>{script}</p>
         <div style={styles.spacer} />
@@ -34,6 +47,11 @@ const styles: Record<string, React.CSSProperties> = {
     overflowY: 'hidden',
     overflowX: 'hidden',
     scrollbarWidth: 'none',
+    pointerEvents: 'auto',
+    touchAction: 'none',
+    cursor: 'grab',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
   },
   spacer: {
     height: '100%',

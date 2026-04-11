@@ -34,7 +34,8 @@ function generateFileName(scriptTitle?: string): string {
 
 export function useMediaRecorder(
   stream: MediaStream | null,
-  scriptTitle?: string
+  scriptTitle?: string,
+  format: 'reels' | 'youtube' = 'reels'
 ): UseMediaRecorderReturn {
   const [isRecording, setIsRecording] = useState(false)
   const [stage, setStage] = useState<RecordingStage>('idle')
@@ -67,6 +68,7 @@ export function useMediaRecorder(
       const formData = new FormData()
       const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'
       formData.append('video', blob, `recording.${ext}`)
+      formData.append('format', format)
 
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest()

@@ -8,6 +8,9 @@ interface UseTeleprompterReturn {
   toggle: () => void
   reset: () => void
   scrollRef: React.RefObject<HTMLDivElement | null>
+  handleDragStart: (clientY: number) => void
+  handleDragMove: (clientY: number) => void
+  handleDragEnd: () => void
 }
 
 export function useTeleprompter(speed: number): UseTeleprompterReturn {
@@ -17,6 +20,13 @@ export function useTeleprompter(speed: number): UseTeleprompterReturn {
   const rafRef = useRef<number | null>(null)
   const isPlayingRef = useRef(false)
   const speedRef = useRef(speed)
+
+  // drag state
+  const isDraggingRef = useRef(false)
+  const dragStartYRef = useRef(0)
+  const dragStartScrollRef = useRef(0)
+  const wasPlayingRef = useRef(false)
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // keep speedRef in sync
   useEffect(() => {
@@ -78,12 +88,52 @@ export function useTeleprompter(speed: number): UseTeleprompterReturn {
     setProgress(0)
   }, [pause])
 
+  const handleDragStart = useCallback((clientY: number) => {
+    isDraggingRef.current = true
+    dragStartYRef.current = clientY
+    dragStartScrollRef.current = scrollRef.current?.scrollTop ?? 0
+    wasPlayingRef.current = isPlayingRef.current
+
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current)
+
+    // pausa o auto-scroll durante o arraste
+    if (isPlayingRef.current) {
+      isPlayingRef.current = false
+      setIsPlaying(false)
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+    }
+  }, [])
+
+  const handleDragMove = useCallback((clientY: number) => {
+    if (!isDraggingRef.current || !scrollRef.current) return
+    const delta = dragStartYRef.current - clientY
+    scrollRef.current.scrollTop = dragStartScrollRef.current + delta
+  }, [])
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDraggingRef.current) return
+    isDraggingRef.current = false
+
+    // retoma só se estava rodando antes do arraste
+    if (wasPlayingRef.current) {
+      resumeTimerRef.current = setTimeout(() => {
+        isPlayingRef.current = true
+        setIsPlaying(true)
+        rafRef.current = requestAnimationFrame(animate)
+      }, 2000)
+    }
+  }, [animate])
+
   // cleanup on unmount
   useEffect(() => {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current)
     }
   }, [])
 
-  return { isPlaying, progress, play, pause, toggle, reset, scrollRef }
+  return { isPlaying, progress, play, pause, toggle, reset, scrollRef, handleDragStart, handleDragMove, handleDragEnd }
 }

@@ -32,8 +32,8 @@ export function TeleprompterPage() {
 
   const { devices: audioDevices, selectedDeviceId, setSelectedDeviceId } = useAudioDevices()
   const { stream, videoRef, error: cameraError, startCamera, stopCamera } = useCamera()
-  const { isRecording, stage, progress, downloadUrl, fileName, startRecording, stopRecording, clearRecording } = useMediaRecorder(stream, script?.title)
-  const { isPlaying, progress: scrollProgress, play, pause, toggle, reset, scrollRef } = useTeleprompter(speed)
+  const { isRecording, stage, progress, downloadUrl, fileName, startRecording, stopRecording, clearRecording } = useMediaRecorder(stream, script?.title, script?.format ?? (isMobile ? 'reels' : 'youtube'))
+  const { isPlaying, progress: scrollProgress, play, pause, toggle, reset, scrollRef, handleDragStart, handleDragMove, handleDragEnd } = useTeleprompter(speed)
 
   // Carrega todos os roteiros do usuário
   useEffect(() => {
@@ -234,6 +234,9 @@ export function TeleprompterPage() {
           scrollRef={scrollRef}
           script={scriptText}
           fontSize={fontSize}
+          onDragStart={handleDragStart}
+          onDragMove={handleDragMove}
+          onDragEnd={handleDragEnd}
         />
       )}
 

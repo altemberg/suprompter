@@ -63,8 +63,8 @@ export function TeleTeste() {
   const [erro, setErro] = useState('')
 
   const { stream, videoRef, error: cameraError, startCamera, stopCamera } = useCamera()
-  const { isRecording, stage: recStage, progress, downloadUrl, fileName, startRecording, stopRecording } = useMediaRecorder(stream, 'teleteste')
-  const { isPlaying, toggle, reset, progress: scrollProgress, scrollRef } = useTeleprompter(4)
+  const { isRecording, stage: recStage, progress, downloadUrl, fileName, startRecording, stopRecording } = useMediaRecorder(stream, 'teleteste', 'reels')
+  const { isPlaying, toggle, reset, progress: scrollProgress, scrollRef, handleDragStart, handleDragMove, handleDragEnd } = useTeleprompter(4)
 
   useEffect(() => {
     async function init() {
@@ -227,7 +227,14 @@ export function TeleTeste() {
           {/* Texto rolando */}
           <div
             ref={scrollRef}
-            style={{ maxHeight: '45vh', overflowY: 'hidden', padding: '0 28px' }}
+            style={{ maxHeight: '45vh', overflowY: 'hidden', padding: '0 28px', touchAction: 'none', cursor: 'grab', userSelect: 'none' }}
+            onTouchStart={e => handleDragStart(e.touches[0].clientY)}
+            onTouchMove={e => { e.preventDefault(); handleDragMove(e.touches[0].clientY) }}
+            onTouchEnd={handleDragEnd}
+            onMouseDown={e => handleDragStart(e.clientY)}
+            onMouseMove={e => { if (e.buttons === 1) handleDragMove(e.clientY) }}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
           >
             <p style={{
               fontFamily: 'Georgia, serif',
