@@ -168,46 +168,84 @@ def get_audio_url_cobalt(url: str) -> str:
 
 
 def download_audio(audio_url: str, original_url: str = "") -> str:
-    """Baixa o áudio via yt-dlp para que ele gerencie headers/cookies por plataforma."""
+    """
+    Baixa o áudio para arquivo temporário.
+    Para URLs do CDN do Instagram, baixa diretamente com urllib.
+    Para outras URLs, usa yt-dlp.
+    """
     import yt_dlp
-    import glob
 
-    suffix = ".mp3"
-    if ".m4a" in audio_url:
-        suffix = ".m4a"
-    elif ".webm" in audio_url:
-        suffix = ".webm"
-    elif ".ogg" in audio_url:
-        suffix = ".ogg"
-    elif ".mp4" in audio_url:
-        suffix = ".mp4"
+    # Detecta se é URL direta do CDN (Instagram, Facebook CDN, etc.)
+    is_cdn_url = any(cdn in audio_url for cdn in [
+        'cdninstagram.com',
+        'fbcdn.net',
+        'fna.fbcdn.net',
+        'scontent',
+    ])
+
+    # Detecta extensão pelo conteúdo da URL
+    suffix = '.mp4'
+    if '.webm' in audio_url:
+        suffix = '.webm'
+    elif '.m4a' in audio_url:
+        suffix = '.m4a'
 
     tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
     tmp_path = tmp.name
     tmp.close()
 
-    # Usa a URL original para que o yt-dlp gerencie headers/tokens por plataforma
-    download_target = original_url if original_url else audio_url
+    if is_cdn_url:
+        # Download direto — a URL do CDN não precisa de autenticação
+        # mas precisa dos headers corretos para não ser bloqueada
+        try:
+            req = urllib.request.Request(
+                audio_url,
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+                    'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'pt-BR,pt;q=0.9',
+                    'Referer': 'https://www.instagram.com/',
+                    'Origin': 'https://www.instagram.com',
+                    'Range': 'bytes=0-',
+                }
+            )
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                with open(tmp_path, 'wb') as f:
+                    f.write(resp.read())
+
+            size = os.path.getsize(tmp_path)
+            print(f'[download_cdn] OK: {size / 1024 / 1024:.1f}MB')
+            return tmp_path
+
+        except Exception as e:
+            print(f'[download_cdn] falhou: {e} — tentando yt-dlp')
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+
+    # Para YouTube e outras URLs — usa yt-dlp com a URL original
+    download_target = original_url if original_url and 'instagram.com' not in original_url else audio_url
 
     ydl_opts = {
-        "format": "bestaudio/best",
-        "outtmpl": tmp_path.replace(suffix, "") + ".%(ext)s",
-        "quiet": True,
-        "no_warnings": True,
-        "noplaylist": True,
-        "postprocessors": [],
+        'format': 'bestaudio/best',
+        'outtmpl': tmp_path.replace(suffix, '') + '.%(ext)s',
+        'quiet': True,
+        'no_warnings': True,
+        'noplaylist': True,
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(download_target, download=True)
-            if info and "requested_downloads" in info:
-                downloaded_path = info["requested_downloads"][0]["filepath"]
+            if 'requested_downloads' in info:
+                downloaded_path = info['requested_downloads'][0]['filepath']
             else:
-                base = tmp_path.replace(suffix, "")
-                matches = glob.glob(base + ".*")
+                import glob
+                base = tmp_path.replace(suffix, '')
+                matches = glob.glob(base + '.*')
                 if not matches:
-                    raise Exception("Arquivo baixado não encontrado")
+                    raise Exception('Arquivo baixado não encontrado')
                 downloaded_path = matches[0]
 
         if downloaded_path != tmp_path:
@@ -220,7 +258,7 @@ def download_audio(audio_url: str, original_url: str = "") -> str:
             os.unlink(tmp_path)
         except Exception:
             pass
-        raise Exception(f"Erro ao baixar áudio: {e}")
+        raise Exception(f'Erro ao baixar áudio: {e}')
 
 
 def transcribe_with_whisper(tmp_path: str, api_key: str) -> dict:
