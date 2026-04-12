@@ -36,12 +36,9 @@ def get_audio_url_instagram(url: str) -> str:
         'x-csrftoken': 'missing',
         'x-ig-app-id': '936619743392459',
         'accept': '*/*',
-        'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        'accept-language': 'pt-BR,pt;q=0.9',
         'origin': 'https://www.instagram.com',
         'referer': f'https://www.instagram.com/reel/{shortcode}/',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
     }
 
     req = urllib.request.Request(
@@ -51,8 +48,20 @@ def get_audio_url_instagram(url: str) -> str:
         method='POST',
     )
 
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        data = json.loads(resp.read())
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            raw = resp.read()
+            print(f'[instagram] status: {resp.status}')
+            print(f'[instagram] resposta raw (500 chars): {raw[:500]}')
+            data = json.loads(raw)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', errors='ignore')
+        print(f'[instagram] HTTP {e.code}: {body[:300]}')
+        raise Exception(f'HTTP {e.code}: {body[:200]}')
+
+    print(f'[instagram] chaves do data: {list(data.keys())}')
+    if 'data' in data:
+        print(f'[instagram] chaves do data.data: {list(data["data"].keys())}')
 
     try:
         items = (
@@ -61,23 +70,23 @@ def get_audio_url_instagram(url: str) -> str:
             ['items']
         )
         if not items:
-            raise Exception('Nenhum item encontrado na resposta')
+            raise Exception('Items vazio')
 
         video_versions = items[0].get('video_versions', [])
         if not video_versions:
-            raise Exception('Sem versões de vídeo — pode ser um post de imagem')
+            raise Exception('Sem video_versions')
 
         best = video_versions[0]
         video_url = best.get('url')
-
         if not video_url:
-            raise Exception('URL do vídeo não encontrada na resposta')
+            raise Exception('URL vazia')
 
-        print(f'[instagram] Vídeo encontrado: {best.get("width")}x{best.get("height")}')
+        print(f'[instagram] OK: {best.get("width")}x{best.get("height")}')
         return video_url
 
     except KeyError as e:
-        raise Exception(f'Estrutura inesperada na resposta do Instagram: {e}')
+        print(f'[instagram] KeyError: {e} — estrutura completa: {json.dumps(data)[:500]}')
+        raise Exception(f'Estrutura inesperada: {e}')
 
 
 def get_audio_url_ytdlp(url: str) -> str:
