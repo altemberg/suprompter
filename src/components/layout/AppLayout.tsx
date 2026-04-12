@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { Menu, Home, FileText, Video, Film, Settings, Captions, FlaskConical } from 'lucide-react'
+import { Menu, Home, FileText, Video, Film, Settings, Captions } from 'lucide-react'
 import { AppSidebar } from './AppSidebar'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -87,7 +87,6 @@ const mobileNavItems = [
   { label: 'Teleprompter', icon: Video, to: '/teleprompter', experimental: false },
   { label: 'Gravações', icon: Film, to: '/gravacoes', experimental: false },
   { label: 'Transcritor', icon: Captions, to: '/transcritor', experimental: false },
-  { label: 'TeleTeste', icon: FlaskConical, to: '/teleteste', experimental: true },
 ]
 
 function MobileNav({ onClose }: { onClose: () => void }) {
