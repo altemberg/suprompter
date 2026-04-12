@@ -27,8 +27,8 @@ const navItems = [
   { label: 'Transcritor', icon: Captions, to: '/transcritor' },
 ]
 
-function DropdownItem({
-  icon, label, onClick
+function MenuItem({
+  icon, label, onClick,
 }: {
   icon: React.ReactNode
   label: string
@@ -40,8 +40,7 @@ function DropdownItem({
       style={{
         display: 'flex', alignItems: 'center', gap: '8px',
         padding: '6px 8px', borderRadius: 'var(--radius-md)',
-        fontSize: '13px', color: 'var(--text-muted)',
-        cursor: 'pointer',
+        fontSize: '13px', color: 'var(--text-muted)', cursor: 'pointer',
       }}
       onMouseEnter={e => {
         e.currentTarget.style.background = 'var(--bg-hover)'
@@ -79,12 +78,26 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   return (
     <Sidebar>
-      <SidebarHeader style={{ padding: '20px', borderBottom: '0.5px solid rgba(255,255,255,0.07)' }}>
-        <span style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '-0.3px', color: 'white' }}>
-          Opini<span style={{ color: '#a9a3f0' }}>fy</span>
-        </span>
+      {/* Logo */}
+      <SidebarHeader style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{
+            width: '22px', height: '22px', borderRadius: 'var(--radius-md)',
+            background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Video size={12} color="var(--accent-light)" />
+          </div>
+          <span style={{
+            fontSize: '14px', fontWeight: 600,
+            color: 'var(--text-primary)', letterSpacing: '-0.3px',
+          }}>
+            Opinify
+          </span>
+        </div>
       </SidebarHeader>
 
+      {/* Nav items */}
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -97,21 +110,23 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                         isActive={isActive}
                         onClick={() => handleNavigate(item.to)}
                         style={{
-                          padding: '8px 10px',
-                          borderRadius: '8px',
-                          fontSize: '13.5px',
+                          padding: '5px 8px',
+                          borderRadius: 'var(--radius-md)',
+                          fontSize: '13px',
+                          fontWeight: isActive ? 500 : 400,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '10px',
-                          color: isActive ? '#a9a3f0' : 'rgba(255,255,255,0.45)',
-                          background: isActive ? 'rgba(127,119,221,0.15)' : 'transparent',
-                          transition: 'background 0.15s, color 0.15s',
+                          gap: '8px',
+                          color: isActive ? 'var(--text-secondary)' : 'var(--text-muted)',
+                          background: isActive ? 'var(--bg-active)' : 'transparent',
+                          transition: 'background 0.1s, color 0.1s',
                           width: '100%',
                           border: 'none',
                           cursor: 'pointer',
+                          marginBottom: '1px',
                         }}
                       >
-                        <item.icon size={15} strokeWidth={1.8} />
+                        <item.icon size={14} strokeWidth={1.8} style={{ opacity: isActive ? 1 : 0.7, flexShrink: 0 }} />
                         <span>{item.label}</span>
                       </SidebarMenuButton>
                     )}
@@ -123,17 +138,15 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
+      {/* Footer */}
       <SidebarFooter style={{ borderTop: '1px solid var(--border-subtle)', padding: '6px 8px' }}>
-        {/* Dropdown do usuário */}
+        {/* Dropdown — abre acima do footer */}
         {userMenuOpen && (
           <>
-            {/* Overlay para fechar ao clicar fora */}
             <div
               onClick={() => setUserMenuOpen(false)}
               style={{ position: 'fixed', inset: 0, zIndex: 40 }}
             />
-
-            {/* Menu — posicionado acima do footer */}
             <div style={{
               position: 'fixed',
               bottom: '52px',
@@ -147,37 +160,34 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             }}>
               {/* Card do usuário */}
               <div style={{
-                padding: '16px',
+                padding: '20px 16px 16px',
                 borderBottom: '1px solid var(--border-subtle)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
+                background: 'var(--bg-hover)',
               }}>
                 <div style={{
                   width: '52px', height: '52px', borderRadius: '50%',
-                  background: 'var(--accent-bg)',
-                  border: '1px solid var(--accent-border)',
+                  background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '18px', fontWeight: 600, color: 'var(--accent-light)',
                 }}>
                   {initials}
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                  <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '2px' }}>
                     {displayName}
                   </p>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {user?.email}
-                  </p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{user?.email}</p>
                 </div>
               </div>
 
-              {/* Items */}
               <div style={{ padding: '4px' }}>
-                <DropdownItem
+                <MenuItem
                   icon={<User size={13} />}
                   label="Configurações da conta"
                   onClick={() => { navigate('/configuracoes'); setUserMenuOpen(false) }}
                 />
-                <DropdownItem
+                <MenuItem
                   icon={<HelpCircle size={13} />}
                   label="Suporte"
                   onClick={() => { window.open('mailto:suporte@opinify.com'); setUserMenuOpen(false) }}
@@ -185,10 +195,9 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
                 <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
 
-                {/* Toggle tema + Log out — mesma linha */}
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '5px 8px', borderRadius: 'var(--radius-md)',
+                  padding: '6px 8px',
                 }}>
                   <button
                     onClick={toggleTheme}
@@ -196,7 +205,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                       display: 'flex', alignItems: 'center', gap: '6px',
                       background: 'none', border: 'none', cursor: 'pointer',
                       color: 'var(--text-muted)', fontSize: '13px',
-                      fontFamily: 'var(--font-sans)', padding: 0,
+                      fontFamily: 'var(--font-sans)', padding: 0, letterSpacing: '-0.01em',
                     }}
                     onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
                     onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
@@ -210,11 +219,11 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                     style={{
                       display: 'flex', alignItems: 'center', gap: '5px',
                       background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'hsl(1, 62%, 60%)', fontSize: '13px',
-                      fontFamily: 'var(--font-sans)', padding: 0,
+                      color: 'var(--red)', fontSize: '13px',
+                      fontFamily: 'var(--font-sans)', padding: 0, letterSpacing: '-0.01em',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.color = 'hsl(1, 62%, 76%)'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'hsl(1, 62%, 60%)'}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--red-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--red)'}
                   >
                     Log out
                     <LogOut size={12} />
@@ -225,24 +234,22 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           </>
         )}
 
-        {/* Linha do footer — avatar + nome + ícone */}
+        {/* Trigger — avatar + nome + ⋯ */}
         <div
           onClick={() => setUserMenuOpen(p => !p)}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '5px 8px', borderRadius: 'var(--radius-md)',
-            cursor: 'pointer',
+            cursor: 'pointer', transition: 'background 0.1s',
           }}
           onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
           <div style={{
             width: '26px', height: '26px', borderRadius: '50%',
-            background: 'var(--accent-bg)',
-            border: '1px solid var(--accent-border)',
+            background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '10px', fontWeight: 600, color: 'var(--accent-light)',
-            flexShrink: 0,
+            fontSize: '10px', fontWeight: 600, color: 'var(--accent-light)', flexShrink: 0,
           }}>
             {initials}
           </div>
