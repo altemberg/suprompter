@@ -1,4 +1,5 @@
-import { Home, FileText, Video, Film, Captions, Settings, HelpCircle, Sun, Moon, LogOut } from 'lucide-react'
+import { useState } from 'react'
+import { Home, FileText, Video, Film, Captions, MoreHorizontal, User, HelpCircle, Sun, Moon, LogOut } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Sidebar,
@@ -26,10 +27,42 @@ const navItems = [
   { label: 'Transcritor', icon: Captions, to: '/transcritor' },
 ]
 
+function DropdownItem({
+  icon, label, onClick
+}: {
+  icon: React.ReactNode
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '6px 8px', borderRadius: 'var(--radius-md)',
+        fontSize: '13px', color: 'var(--text-muted)',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = 'var(--bg-hover)'
+        e.currentTarget.style.color = 'var(--text-secondary)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = 'transparent'
+        e.currentTarget.style.color = 'var(--text-muted)'
+      }}
+    >
+      {icon}
+      {label}
+    </div>
+  )
+}
+
 export function AppSidebar({ onNavigate }: AppSidebarProps) {
   const { user, signOut } = useAuthStore()
   const navigate = useNavigate()
   const { isDark: isDarkTheme, toggleTheme } = useTheme()
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   async function handleSignOut() {
     await signOut()
@@ -40,6 +73,9 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
     navigate(to)
     onNavigate?.()
   }
+
+  const displayName = user?.user_metadata?.name ?? user?.email?.split('@')[0] ?? 'Usuário'
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'OP'
 
   return (
     <Sidebar>
@@ -87,100 +123,111 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter style={{ borderTop: '0.5px solid rgba(255,255,255,0.07)', padding: '10px' }}>
-        {/* Suporte */}
+      <SidebarFooter style={{ borderTop: '1px solid var(--border-subtle)', padding: '6px 8px' }}>
+        {/* Dropdown do usuário */}
+        {userMenuOpen && (
+          <>
+            {/* Overlay para fechar ao clicar fora */}
+            <div
+              onClick={() => setUserMenuOpen(false)}
+              style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+            />
+
+            {/* Menu — posicionado acima do footer */}
+            <div style={{
+              position: 'fixed',
+              bottom: '52px',
+              left: '8px',
+              width: '272px',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-lg)',
+              zIndex: 50,
+              overflow: 'hidden',
+            }}>
+              {/* Card do usuário */}
+              <div style={{
+                padding: '16px',
+                borderBottom: '1px solid var(--border-subtle)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+              }}>
+                <div style={{
+                  width: '52px', height: '52px', borderRadius: '50%',
+                  background: 'var(--accent-bg)',
+                  border: '1px solid var(--accent-border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '18px', fontWeight: 600, color: 'var(--accent-light)',
+                }}>
+                  {initials}
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                    {displayName}
+                  </p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {user?.email}
+                  </p>
+                </div>
+              </div>
+
+              {/* Items */}
+              <div style={{ padding: '4px' }}>
+                <DropdownItem
+                  icon={<User size={13} />}
+                  label="Configurações da conta"
+                  onClick={() => { navigate('/configuracoes'); setUserMenuOpen(false) }}
+                />
+                <DropdownItem
+                  icon={<HelpCircle size={13} />}
+                  label="Suporte"
+                  onClick={() => { window.open('mailto:suporte@opinify.com'); setUserMenuOpen(false) }}
+                />
+
+                <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
+
+                {/* Toggle tema + Log out — mesma linha */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '5px 8px', borderRadius: 'var(--radius-md)',
+                }}>
+                  <button
+                    onClick={toggleTheme}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-muted)', fontSize: '13px',
+                      fontFamily: 'var(--font-sans)', padding: 0,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                  >
+                    {isDarkTheme ? <Sun size={13} /> : <Moon size={13} />}
+                    {isDarkTheme ? 'Light Theme' : 'Dark Theme'}
+                  </button>
+
+                  <button
+                    onClick={() => { handleSignOut(); setUserMenuOpen(false) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '5px',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'hsl(1, 62%, 60%)', fontSize: '13px',
+                      fontFamily: 'var(--font-sans)', padding: 0,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'hsl(1, 62%, 76%)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'hsl(1, 62%, 60%)'}
+                  >
+                    Log out
+                    <LogOut size={12} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Linha do footer — avatar + nome + ícone */}
         <div
-          className="nav-item"
-          onClick={() => window.open('mailto:suporte@opinify.com', '_blank')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '5px 8px', borderRadius: 'var(--radius-md)',
-            fontSize: '13px', color: 'var(--text-muted)',
-            cursor: 'pointer', marginBottom: '1px',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'var(--bg-hover)'
-            e.currentTarget.style.color = 'var(--text-secondary)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.color = 'var(--text-muted)'
-          }}
-        >
-          <HelpCircle size={14} />
-          Suporte
-        </div>
-
-        {/* Configurações da conta */}
-        <div
-          className="nav-item"
-          onClick={() => navigate('/configuracoes')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '5px 8px', borderRadius: 'var(--radius-md)',
-            fontSize: '13px', color: 'var(--text-muted)',
-            cursor: 'pointer', marginBottom: '4px',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'var(--bg-hover)'
-            e.currentTarget.style.color = 'var(--text-secondary)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.color = 'var(--text-muted)'
-          }}
-        >
-          <Settings size={14} />
-          Configurações
-        </div>
-
-        {/* Divisor */}
-        <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
-
-        {/* Linha: Toggle de tema + Sair */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '4px 8px',
-        }}>
-          <button
-            onClick={toggleTheme}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              background: 'transparent', border: 'none',
-              color: 'var(--text-muted)', fontSize: '12px',
-              cursor: 'pointer', padding: '3px 0',
-              fontFamily: 'var(--font-sans)',
-            }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-          >
-            {isDarkTheme ? <Sun size={13} /> : <Moon size={13} />}
-            {isDarkTheme ? 'Light Theme' : 'Dark Theme'}
-          </button>
-
-          <button
-            onClick={handleSignOut}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '5px',
-              background: 'transparent', border: 'none',
-              color: 'hsl(1, 62%, 60%)',
-              fontSize: '12px', cursor: 'pointer',
-              fontFamily: 'var(--font-sans)',
-              padding: '3px 0',
-            }}
-            onMouseEnter={e => e.currentTarget.style.color = 'hsl(1, 62%, 76%)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'hsl(1, 62%, 60%)'}
-          >
-            Sair
-            <LogOut size={12} />
-          </button>
-        </div>
-
-        {/* Divisor */}
-        <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
-
-        {/* Avatar + email */}
-        <div
+          onClick={() => setUserMenuOpen(p => !p)}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '5px 8px', borderRadius: 'var(--radius-md)',
@@ -190,28 +237,22 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
           <div style={{
-            width: '24px', height: '24px',
-            borderRadius: '50%',
+            width: '26px', height: '26px', borderRadius: '50%',
             background: 'var(--accent-bg)',
             border: '1px solid var(--accent-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '10px', fontWeight: 600,
-            color: 'var(--accent-light)',
+            fontSize: '10px', fontWeight: 600, color: 'var(--accent-light)',
             flexShrink: 0,
           }}>
-            {user?.email?.slice(0, 2).toUpperCase() ?? 'OP'}
+            {initials}
           </div>
-
           <span style={{
-            fontSize: '12px',
-            color: 'var(--text-muted)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            flex: 1,
+            flex: 1, fontSize: '13px', color: 'var(--text-secondary)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            {user?.email ?? ''}
+            {displayName}
           </span>
+          <MoreHorizontal size={14} style={{ color: 'var(--text-disabled)', flexShrink: 0 }} />
         </div>
       </SidebarFooter>
     </Sidebar>
