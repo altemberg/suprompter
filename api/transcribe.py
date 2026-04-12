@@ -1,11 +1,83 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
+import re
 import tempfile
 import urllib.request
+from urllib.parse import quote
 
 COBALT_URL = os.environ.get("COBALT_URL", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+
+
+def extract_instagram_shortcode(url: str) -> str:
+    """Extrai o shortcode de uma URL do Instagram."""
+    url = url.split('?')[0]
+    pattern = r'instagram\.com/(?:[^/]+/)?(?:reel|p)/([^/?]+)'
+    match = re.search(pattern, url)
+    if not match:
+        raise Exception('URL do Instagram inválida')
+    return match.group(1)
+
+
+def get_audio_url_instagram(url: str) -> str:
+    """
+    Extrai a URL do vídeo do Instagram via GraphQL interno.
+    Sem autenticação, sem API key — igual ao que o browser faz.
+    """
+    shortcode = extract_instagram_shortcode(url)
+
+    variables = quote(f'{{"shortcode":"{shortcode}"}}')
+    payload = f'variables={variables}&doc_id=24368985919464652'
+
+    headers = {
+        'content-type': 'application/x-www-form-urlencoded',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'x-csrftoken': 'missing',
+        'x-ig-app-id': '936619743392459',
+        'accept': '*/*',
+        'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        'origin': 'https://www.instagram.com',
+        'referer': f'https://www.instagram.com/reel/{shortcode}/',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+    }
+
+    req = urllib.request.Request(
+        'https://www.instagram.com/graphql/query',
+        data=payload.encode(),
+        headers=headers,
+        method='POST',
+    )
+
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read())
+
+    try:
+        items = (
+            data['data']
+            ['xdt_api__v1__media__shortcode__web_info']
+            ['items']
+        )
+        if not items:
+            raise Exception('Nenhum item encontrado na resposta')
+
+        video_versions = items[0].get('video_versions', [])
+        if not video_versions:
+            raise Exception('Sem versões de vídeo — pode ser um post de imagem')
+
+        best = video_versions[0]
+        video_url = best.get('url')
+
+        if not video_url:
+            raise Exception('URL do vídeo não encontrada na resposta')
+
+        print(f'[instagram] Vídeo encontrado: {best.get("width")}x{best.get("height")}')
+        return video_url
+
+    except KeyError as e:
+        raise Exception(f'Estrutura inesperada na resposta do Instagram: {e}')
 
 
 def get_audio_url_ytdlp(url: str) -> str:
@@ -183,34 +255,63 @@ class handler(BaseHTTPRequestHandler):
             if not api_key:
                 return self._respond(400, {"error": "OPENAI_API_KEY não configurada no servidor"})
 
-            # 1. Tenta yt-dlp
+            # 1. Detecta se é Instagram
+            is_instagram = 'instagram.com' in url
+
             audio_url = None
             source = None
             ytdlp_error = None
             cobalt_error = None
+            instagram_error = None
 
-            try:
-                audio_url = get_audio_url_ytdlp(url)
-                source = "ytdlp"
-                print(f"[yt-dlp] OK: {audio_url[:80]}...")
-            except Exception as e:
-                ytdlp_error = str(e)
-                print(f"[yt-dlp] falhou: {e}")
+            if is_instagram:
+                # Instagram: usa GraphQL interno primeiro
+                try:
+                    audio_url = get_audio_url_instagram(url)
+                    source = 'instagram_graphql'
+                    print(f'[instagram_graphql] OK')
+                except Exception as e:
+                    instagram_error = str(e)
+                    print(f'[instagram_graphql] falhou: {e}')
 
-            # 2. Fallback Cobalt
+                # Fallback para yt-dlp se GraphQL falhar
+                if not audio_url:
+                    try:
+                        audio_url = get_audio_url_ytdlp(url)
+                        source = 'ytdlp'
+                        print(f'[yt-dlp] OK como fallback')
+                    except Exception as e:
+                        ytdlp_error = str(e)
+                        print(f'[yt-dlp] falhou: {e}')
+
+            else:
+                # YouTube e outros: usa yt-dlp normalmente
+                try:
+                    audio_url = get_audio_url_ytdlp(url)
+                    source = 'ytdlp'
+                    print(f'[yt-dlp] OK')
+                except Exception as e:
+                    ytdlp_error = str(e)
+                    print(f'[yt-dlp] falhou: {e}')
+
+            # Fallback final: Cobalt
             if not audio_url:
                 try:
                     audio_url = get_audio_url_cobalt(url)
-                    source = "cobalt"
-                    print(f"[cobalt] OK: {audio_url[:80]}...")
+                    source = 'cobalt'
+                    print(f'[cobalt] OK como fallback final')
                 except Exception as e:
                     cobalt_error = str(e)
-                    print(f"[cobalt] falhou: {e}")
+                    print(f'[cobalt] falhou: {e}')
 
             if not audio_url:
                 return self._respond(422, {
                     "error": "Não foi possível extrair o áudio desta URL. Verifique se o link é público.",
-                    "details": {"ytdlp": ytdlp_error, "cobalt": cobalt_error},
+                    "details": {
+                        "instagram": instagram_error,
+                        "ytdlp": ytdlp_error,
+                        "cobalt": cobalt_error,
+                    },
                 })
 
             # 3. Baixa o áudio
