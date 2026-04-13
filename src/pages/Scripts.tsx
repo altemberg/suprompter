@@ -6,7 +6,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import type { Script, Format } from '@/types'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ScriptCard } from '@/components/scripts/ScriptCard'
-import { Plus, Search, FileText } from 'lucide-react'
+import { Plus, Search, FileText, Captions } from 'lucide-react'
 
 export function Scripts() {
   const { user } = useAuthStore()
@@ -79,27 +79,25 @@ export function Scripts() {
           </h1>
           <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.38)' }}>Gerencie seus roteiros</p>
         </div>
-        <button
-          onClick={createScript}
-          disabled={creating}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '7px',
-            padding: '8px 16px',
-            background: 'rgba(127,119,221,0.2)',
-            border: '0.5px solid rgba(127,119,221,0.35)',
-            borderRadius: '8px',
-            fontSize: '13.5px', fontWeight: 500,
-            color: '#a9a3f0',
-            cursor: creating ? 'not-allowed' : 'pointer',
-            opacity: creating ? 0.6 : 1,
-            transition: 'background 0.15s',
-            minHeight: '44px',
-            flexShrink: 0,
-          }}
-        >
-          <Plus size={15} strokeWidth={2} />
-          {creating ? 'Criando...' : 'Novo Roteiro'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          <button
+            onClick={() => navigate('/transcritor')}
+            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 14px', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', fontSize: '14px', color: 'var(--text-muted)', cursor: 'pointer', minHeight: '44px', transition: 'border-color 0.1s, color 0.1s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-muted)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          >
+            <Captions size={14} strokeWidth={1.8} />
+            Transcritor
+          </button>
+          <button
+            onClick={createScript}
+            disabled={creating}
+            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px', background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 'var(--radius-md)', fontSize: '14px', fontWeight: 500, color: 'var(--accent-light)', cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.6 : 1, minHeight: '44px' }}
+          >
+            <Plus size={15} strokeWidth={2} />
+            {creating ? 'Criando...' : 'Novo Roteiro'}
+          </button>
+        </div>
       </div>
 
       {/* Filtros */}

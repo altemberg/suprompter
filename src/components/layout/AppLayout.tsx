@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { Menu, Home, FileText, Video, Film, Settings, Captions } from 'lucide-react'
+import { Menu, Home, FileText, Video, Film, Settings } from 'lucide-react'
 import { AppSidebar } from './AppSidebar'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -17,7 +17,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   if (isMobile) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100dvh', background: '#0d0d0d', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100dvh', background: '#13111c', overflow: 'hidden' }}>
         {/* Top bar mobile */}
         <div style={{
           display: 'flex',
@@ -59,7 +59,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </Sheet>
 
         {/* Page content */}
-        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', background: '#0d0d0d' }}>
+        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', background: '#13111c' }}>
           {children}
         </main>
       </div>
@@ -69,7 +69,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main className="flex-1 flex flex-col min-h-0 overflow-auto bg-[#0d0d0d]">
+      <main className="flex-1 flex flex-col min-h-0 overflow-auto bg-[#13111c]">
         <div className="px-2 py-2 md:hidden border-b border-white/[0.07]">
           <SidebarTrigger />
         </div>
@@ -86,7 +86,6 @@ const mobileNavItems = [
   { label: 'Roteiros', icon: FileText, to: '/roteiros', experimental: false },
   { label: 'Teleprompter', icon: Video, to: '/teleprompter', experimental: false },
   { label: 'Gravações', icon: Film, to: '/gravacoes', experimental: false },
-  { label: 'Transcritor', icon: Captions, to: '/transcritor', experimental: false },
 ]
 
 function MobileNav({ onClose }: { onClose: () => void }) {

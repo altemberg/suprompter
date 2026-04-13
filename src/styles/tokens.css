@@ -1,5 +1,5 @@
 :root {
-  --bg-page:     hsl(250, 24%, 9%);
+  --bg-page:     #13111c;
   --bg-surface:  hsl(250, 21%, 11%);
   --bg-sidebar:  hsl(250, 22%, 10%);
   --bg-hover:    hsl(248, 21%, 13%);
@@ -16,9 +16,9 @@
   --text-disabled:  hsl(246, 7%, 45%);
 
   --accent:        #7F77DD;
-  --accent-light:  #a9a3f0;
-  --accent-bg:     rgba(127, 119, 221, 0.15);
-  --accent-border: rgba(127, 119, 221, 0.28);
+  --accent-light:  #a667e4;
+  --accent-bg:     rgba(166, 103, 228, 0.12);
+  --accent-border: rgba(166, 103, 228, 0.28);
 
   --teal:       #1D9E75;
   --teal-bg:    rgba(29, 158, 117, 0.15);
