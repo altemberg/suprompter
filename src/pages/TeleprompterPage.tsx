@@ -8,6 +8,7 @@ import type { Script } from '@/types'
 import { useCamera } from '@/hooks/useCamera'
 import { useMediaRecorder } from '@/hooks/useMediaRecorder'
 import { useAudioDevices } from '@/hooks/useAudioDevices'
+import { useVideoDevices } from '@/hooks/useVideoDevices'
 import { useTeleprompter } from '@/hooks/useTeleprompter'
 import { Controls } from '@/components/teleprompter/Controls'
 import { ScrollingText } from '@/components/teleprompter/ScrollingText'
@@ -26,11 +27,13 @@ export function TeleprompterPage() {
   const [allScripts, setAllScripts] = useState<Script[]>([])
   const [scriptLoading, setScriptLoading] = useState(!!scriptId)
   const [showControls, setShowControls] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [recordingStartTime, setRecordingStartTime] = useState<number | null>(null)
 
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { devices: audioDevices, selectedDeviceId, setSelectedDeviceId } = useAudioDevices()
+  const { devices: videoDevices, selectedDeviceId: selectedVideoId, setSelectedDeviceId: setSelectedVideoId } = useVideoDevices()
   const { stream, videoRef, error: cameraError, startCamera, stopCamera } = useCamera()
   const { isRecording, stage, progress, downloadUrl, fileName, startRecording, stopRecording, clearRecording } = useMediaRecorder(stream, script?.title, script ? (script.format === 'reels' ? 'reels' : 'youtube') : (isMobile ? 'reels' : 'youtube'))
   const { isPlaying, progress: scrollProgress, play, pause, toggle, reset, scrollRef, handleDragStart, handleDragMove, handleDragEnd } = useTeleprompter(speed)
@@ -68,9 +71,9 @@ export function TeleprompterPage() {
   // Reinicia automaticamente se o dispositivo de áudio mudar.
   useEffect(() => {
     if (scriptLoading) return
-    startCamera(isMobile ? 'reels' : 'youtube', selectedDeviceId)
+    startCamera(isMobile ? 'reels' : 'youtube', selectedDeviceId, selectedVideoId)
     return () => { stopCamera() }
-  }, [startCamera, stopCamera, isMobile, scriptLoading, selectedDeviceId])
+  }, [startCamera, stopCamera, isMobile, scriptLoading, selectedDeviceId, selectedVideoId])
 
   // Cleanup ao desmontar
   useEffect(() => {
@@ -240,8 +243,8 @@ export function TeleprompterPage() {
         />
       )}
 
-      {/* Seletor de microfone — aparece só quando há mais de 1 dispositivo */}
-      {audioDevices.length > 1 && !isRecording && (
+      {/* Seletores de câmera/microfone — controlados pela engrenagem */}
+      {(audioDevices.length >= 1 || videoDevices.length >= 1) && !isRecording && settingsOpen && (
         <div style={{
           position: 'absolute',
           bottom: '120px',
@@ -252,29 +255,60 @@ export function TeleprompterPage() {
           opacity: showControls ? 1 : 0,
           transition: 'opacity 0.3s',
           pointerEvents: showControls ? 'auto' : 'none',
+          display: 'flex', flexDirection: 'column', gap: '10px',
         }}>
-          <label style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '6px' }}>
-            Microfone
-          </label>
-          <select
-            value={selectedDeviceId}
-            onChange={e => setSelectedDeviceId(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              background: '#161616',
-              border: '0.5px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              color: 'white',
-              fontSize: '14px',
-            }}
-          >
-            {audioDevices.map(d => (
-              <option key={d.deviceId} value={d.deviceId}>
-                {d.label}
-              </option>
-            ))}
-          </select>
+          {videoDevices.length >= 1 && (
+            <div>
+              <label style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '6px' }}>
+                Câmera
+              </label>
+              <select
+                value={selectedVideoId}
+                onChange={e => setSelectedVideoId(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  background: '#161616',
+                  border: '0.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                }}
+              >
+                {videoDevices.map(d => (
+                  <option key={d.deviceId} value={d.deviceId}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {audioDevices.length >= 1 && (
+            <div>
+              <label style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '6px' }}>
+                Microfone
+              </label>
+              <select
+                value={selectedDeviceId}
+                onChange={e => setSelectedDeviceId(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  background: '#161616',
+                  border: '0.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                }}
+              >
+                {audioDevices.map(d => (
+                  <option key={d.deviceId} value={d.deviceId}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       )}
 
@@ -297,6 +331,9 @@ export function TeleprompterPage() {
         onFontSizeChange={setFontSize}
         onSelectScript={handleSelectScript}
         onBack={handleBack}
+        settingsOpen={settingsOpen}
+        hasDeviceOptions={audioDevices.length >= 1 || videoDevices.length >= 1}
+        onToggleSettings={() => setSettingsOpen(p => !p)}
       />
     </div>
   )

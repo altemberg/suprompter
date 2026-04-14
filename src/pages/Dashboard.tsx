@@ -25,7 +25,7 @@ export function Dashboard() {
           .select('*')
           .eq('user_id', user!.id)
           .order('updated_at', { ascending: false })
-          .limit(3),
+          .limit(4),
         supabase.from('scripts').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
         supabase.from('recordings').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
       ])
@@ -64,7 +64,7 @@ export function Dashboard() {
     if (data) navigate(`/roteiros/${data.id}`)
   }
 
-  const firstName = user?.email?.split('@')[0]
+  const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'
 
   return (
     <div
@@ -78,7 +78,7 @@ export function Dashboard() {
           Início
         </h1>
         <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.38)' }}>
-          Bem-vindo de volta, {firstName || user?.email?.split('@')[0]}
+          Bem-vindo de volta, {displayName}
         </p>
       </div>
 
@@ -146,7 +146,9 @@ export function Dashboard() {
           <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.38)', marginBottom: '16px' }}>Nenhum roteiro ainda</p>
           <button
             onClick={handleNewScript}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', background: 'var(--accent-bg)', border: '0.5px solid var(--accent-border)', borderRadius: '8px', fontSize: '13px', color: 'var(--accent-light)', cursor: 'pointer', minHeight: '44px' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', background: 'var(--btn-primary)', border: 'none', borderRadius: '8px', fontSize: '13px', color: 'var(--btn-primary-text)', cursor: 'pointer', minHeight: '44px', transition: 'background 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--btn-primary-hover)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--btn-primary)'}
           >
             <Plus size={13} strokeWidth={2} />
             Criar primeiro roteiro
@@ -156,8 +158,8 @@ export function Dashboard() {
 
       {/* Lista de roteiros (quando houver) */}
       {scripts && scripts.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {scripts.slice(0, 3).map(script => (
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '8px' }}>
+          {scripts.slice(0, 4).map(script => (
             <Link
               key={script.id}
               to={`/roteiros/${script.id}`}

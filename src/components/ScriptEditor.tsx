@@ -101,7 +101,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   card: {
     width: '100%',
-    maxWidth: '680px',
     animation: 'fadeIn 0.4s ease',
   },
   heading: {

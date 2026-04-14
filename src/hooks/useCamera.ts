@@ -7,7 +7,7 @@ export interface UseCameraReturn {
   videoRef: React.RefObject<HTMLVideoElement | null>
   error: string | null
   loading: boolean
-  startCamera: (format: CameraFormat, audioDeviceId?: string) => Promise<void>
+  startCamera: (format: CameraFormat, audioDeviceId?: string, videoDeviceId?: string) => Promise<void>
   stopCamera: () => void
 }
 
@@ -18,11 +18,12 @@ export function useCamera(): UseCameraReturn {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
-  const startCamera = useCallback(async (_format: CameraFormat, audioDeviceId?: string) => {
+  const startCamera = useCallback(async (_format: CameraFormat, audioDeviceId?: string, videoDeviceId?: string) => {
     setLoading(true)
     setError(null)
 
     try {
+      const hasVideoDevice = videoDeviceId && videoDeviceId !== 'default'
       const rawStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           ...(audioDeviceId && audioDeviceId !== 'default'
@@ -34,7 +35,9 @@ export function useCamera(): UseCameraReturn {
           channelCount: 1,
         },
         video: {
-          facingMode: 'user',
+          ...(hasVideoDevice
+            ? { deviceId: { exact: videoDeviceId } }
+            : { facingMode: 'user' }),
           frameRate: { ideal: 30, max: 30 },
           width: { ideal: 1920 },
           height: { ideal: 1080 },

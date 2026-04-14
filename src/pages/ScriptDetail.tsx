@@ -257,13 +257,13 @@ export function ScriptDetail() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: '#0d0d0d' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: '#13111c' }}>
 
       {/* ══════════════════ TAB BAR MOBILE ══════════════════ */}
       {isMobile && (
         <div style={{
           display: 'flex', borderBottom: '0.5px solid rgba(255,255,255,0.07)',
-          background: '#0d0d0d', flexShrink: 0,
+          background: '#13111c', flexShrink: 0,
         }}>
           {(['config', 'roteiro'] as const).map(tab => (
             <button

@@ -24,6 +24,8 @@ interface ControlsProps {
   visible: boolean
   scripts: ScriptOption[]
   currentScriptId: string | null
+  settingsOpen?: boolean
+  hasDeviceOptions?: boolean
   onTogglePlay: () => void
   onToggleRecord: () => void
   onReset: () => void
@@ -32,6 +34,7 @@ interface ControlsProps {
   onFontSizeChange: (size: number) => void
   onSelectScript: (id: string) => void
   onBack: () => void
+  onToggleSettings?: () => void
 }
 
 export function Controls({
@@ -52,6 +55,9 @@ export function Controls({
   onFontSizeChange,
   onSelectScript,
   onBack,
+  onToggleSettings,
+  settingsOpen,
+  hasDeviceOptions,
 }: ControlsProps) {
   const isBusy = stage === 'uploading' || stage === 'processing'
 
@@ -192,6 +198,23 @@ export function Controls({
             </>
           )}
         </button>
+
+        {/* Settings gear — só aparece se houver opções e fora do recording */}
+        {hasDeviceOptions && !isRecording && onToggleSettings && (
+          <button
+            onClick={onToggleSettings}
+            style={{
+              ...styles.iconBtn,
+              background: settingsOpen ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)',
+            }}
+            title="Dispositivos (câmera/microfone)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </button>
+        )}
 
         {/* Re-record (only after recording is done) */}
         {downloadUrl && !isRecording && (
