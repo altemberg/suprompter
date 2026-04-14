@@ -20,6 +20,10 @@
   --accent-bg:     rgba(166, 103, 228, 0.12);
   --accent-border: rgba(166, 103, 228, 0.28);
 
+  --btn-primary:       #853bce;
+  --btn-primary-hover: #a667e4;
+  --btn-primary-text:  #ffffff;
+
   --teal:       #1D9E75;
   --teal-bg:    rgba(29, 158, 117, 0.15);
   --teal-light: #4ecda4;

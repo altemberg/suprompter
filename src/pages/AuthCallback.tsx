@@ -8,7 +8,9 @@ export function AuthCallback() {
 
   useEffect(() => {
     supabase.auth.exchangeCodeForSession(window.location.search).then(() => {
-      navigate('/', { replace: true })
+      const searchParams = new URLSearchParams(window.location.search)
+      const next = searchParams.get('next') || '/'
+      navigate(next, { replace: true })
     })
   }, [navigate])
 

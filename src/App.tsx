@@ -14,6 +14,7 @@ import { TeleTeste } from '@/pages/TeleTeste'
 import { Recordings } from '@/pages/Recordings'
 import { SettingsPage } from '@/pages/Settings'
 import { Transcriber } from '@/pages/Transcriber'
+import { ImportScript } from '@/pages/ImportScript'
 
 function AppRoutes() {
   const { initialize } = useAuthStore()
@@ -26,6 +27,8 @@ function AppRoutes() {
     <Routes>
       {/* Rotas públicas */}
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<Login defaultMode="forgot" />} />
+      <Route path="/update-password" element={<Login defaultMode="update" />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
 
       {/* Teleprompter — tela cheia, sem sidebar */}
@@ -65,6 +68,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <AppLayout>
               <Scripts />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/roteiros/importar"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ImportScript />
             </AppLayout>
           </ProtectedRoute>
         }

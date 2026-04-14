@@ -6,7 +6,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import type { Script, Format } from '@/types'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ScriptCard } from '@/components/scripts/ScriptCard'
-import { Plus, Search, FileText, Captions } from 'lucide-react'
+import { Plus, Search, FileText, PenLine, ClipboardPaste, X } from 'lucide-react'
 
 export function Scripts() {
   const { user } = useAuthStore()
@@ -15,6 +15,7 @@ export function Scripts() {
   const [scripts, setScripts] = useState<Script[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [formatFilter, setFormatFilter] = useState<Format | 'all'>('all')
 
@@ -81,21 +82,13 @@ export function Scripts() {
         </div>
         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
           <button
-            onClick={() => navigate('/transcritor')}
-            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 14px', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', fontSize: '14px', color: 'var(--text-muted)', cursor: 'pointer', minHeight: '44px', transition: 'border-color 0.1s, color 0.1s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-muted)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.color = 'var(--text-muted)' }}
-          >
-            <Captions size={14} strokeWidth={1.8} />
-            Transcritor
-          </button>
-          <button
-            onClick={createScript}
-            disabled={creating}
-            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px', background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 'var(--radius-md)', fontSize: '14px', fontWeight: 500, color: 'var(--accent-light)', cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.6 : 1, minHeight: '44px' }}
+            onClick={() => setModalOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px', background: 'var(--btn-primary)', border: 'none', borderRadius: 'var(--radius-md)', fontSize: '14px', fontWeight: 500, color: 'var(--btn-primary-text)', cursor: 'pointer', minHeight: '44px', transition: 'background 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--btn-primary-hover)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--btn-primary)'}
           >
             <Plus size={15} strokeWidth={2} />
-            {creating ? 'Criando...' : 'Novo Roteiro'}
+            Novo Roteiro
           </button>
         </div>
       </div>
@@ -159,7 +152,9 @@ export function Scripts() {
           <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.38)', marginBottom: '16px' }}>Nenhum roteiro encontrado</p>
           <button
             onClick={createScript}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', background: 'var(--accent-bg)', border: '0.5px solid var(--accent-border)', borderRadius: '8px', fontSize: '13px', color: 'var(--accent-light)', cursor: 'pointer', minHeight: '44px' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', background: 'var(--btn-primary)', border: 'none', borderRadius: '8px', fontSize: '13px', color: 'var(--btn-primary-text)', cursor: 'pointer', minHeight: '44px', transition: 'background 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--btn-primary-hover)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--btn-primary)'}
           >
             <Plus size={13} strokeWidth={2} />
             Criar roteiro
@@ -173,6 +168,62 @@ export function Scripts() {
         </div>
       )}
     </div>
+
+    {/* Modal: Novo Roteiro */}
+    {modalOpen && (
+      <div
+        onClick={() => setModalOpen(false)}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '14px', padding: '28px', width: '100%', maxWidth: '420px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>Novo Roteiro</h2>
+            <button onClick={() => setModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-disabled)', display: 'flex', padding: '2px' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-disabled)'}
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button
+              onClick={() => { setModalOpen(false); createScript() }}
+              disabled={creating}
+              style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '16px', background: 'var(--bg-hover)', border: '1px solid var(--border-subtle)', borderRadius: '10px', cursor: creating ? 'not-allowed' : 'pointer', textAlign: 'left', transition: 'border-color 0.15s', opacity: creating ? 0.6 : 1 }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-muted)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
+            >
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <PenLine size={16} color="var(--accent-light)" strokeWidth={1.8} />
+              </div>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '3px' }}>Criar roteiro</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>Comece do zero com o editor e a IA</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => { setModalOpen(false); navigate('/roteiros/importar') }}
+              style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '16px', background: 'var(--bg-hover)', border: '1px solid var(--border-subtle)', borderRadius: '10px', cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-muted)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
+            >
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <ClipboardPaste size={16} color="var(--accent-light)" strokeWidth={1.8} />
+              </div>
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '3px' }}>Importar roteiro</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>Cole um roteiro pronto e vá direto ao teleprompter</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   )
 }
