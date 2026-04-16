@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Home, FileText, Video, MoreHorizontal, User, HelpCircle, LogOut } from 'lucide-react'
+import { Home, FileText, Video, Mic, Settings, MoreHorizontal, User, HelpCircle, LogOut } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Sidebar,
@@ -22,6 +22,13 @@ interface AppSidebarProps {
 const navItems = [
   { label: 'Início', icon: Home, to: '/' },
   { label: 'Roteiros', icon: FileText, to: '/roteiros' },
+  { label: 'Teleprompter', icon: Video, to: '/teleprompter' },
+  { label: 'Transcritor', icon: Mic, to: '/transcritor' },
+  { label: 'Gravações', icon: Video, to: '/gravacoes' },
+]
+
+const bottomNavItems = [
+  { label: 'Configurações', icon: Settings, to: '/configuracoes' },
 ]
 
 function MenuItem({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
@@ -85,6 +92,60 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.to} style={{ marginBottom: '5px' }}>
                   <NavLink to={item.to} end={item.to === '/'}>
+                    {({ isActive }) => (
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => handleNavigate(item.to)}
+                        style={{
+                          padding: '8px 12px',
+                          height: '36px',
+                          borderRadius: 'var(--radius-md)',
+                          fontSize: '14px',
+                          fontWeight: isActive ? 500 : 400,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '9px',
+                          color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                          background: isActive ? 'var(--bg-active)' : 'transparent',
+                          transition: 'background 0.1s, color 0.1s',
+                          width: '100%',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={e => {
+                          if (!isActive) {
+                            e.currentTarget.style.background = 'var(--bg-hover)'
+                            e.currentTarget.style.color = 'var(--text-secondary)'
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (!isActive) {
+                            e.currentTarget.style.background = 'transparent'
+                            e.currentTarget.style.color = 'var(--text-muted)'
+                          }
+                        }}
+                      >
+                        <item.icon
+                          size={15}
+                          strokeWidth={1.8}
+                          style={{ flexShrink: 0, color: isActive ? 'var(--accent-light)' : undefined }}
+                        />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    )}
+                  </NavLink>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup style={{ marginTop: 'auto', borderTop: '1px solid var(--border-subtle)', paddingTop: '8px' }}>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {bottomNavItems.map((item) => (
+                <SidebarMenuItem key={item.to} style={{ marginBottom: '5px' }}>
+                  <NavLink to={item.to}>
                     {({ isActive }) => (
                       <SidebarMenuButton
                         isActive={isActive}
