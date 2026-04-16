@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Home, FileText, Video, Mic, Settings, MoreHorizontal, User, HelpCircle, LogOut } from 'lucide-react'
+import { Video, MoreHorizontal, User, HelpCircle, LogOut } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Sidebar,
@@ -13,23 +13,11 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { useAuthStore } from '@/stores/useAuthStore'
-
+import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from './nav-config'
 
 interface AppSidebarProps {
   onNavigate?: () => void
 }
-
-const navItems = [
-  { label: 'Início', icon: Home, to: '/' },
-  { label: 'Roteiros', icon: FileText, to: '/roteiros' },
-  { label: 'Teleprompter', icon: Video, to: '/teleprompter' },
-  { label: 'Transcritor', icon: Mic, to: '/transcritor' },
-  { label: 'Gravações', icon: Video, to: '/gravacoes' },
-]
-
-const bottomNavItems = [
-  { label: 'Configurações', icon: Settings, to: '/configuracoes' },
-]
 
 function MenuItem({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
   return (
@@ -89,7 +77,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu style={{ marginTop: '10px' }}>
-              {navItems.map((item) => (
+              {NAV_ITEMS.map((item) => (
                 <SidebarMenuItem key={item.to} style={{ marginBottom: '5px' }}>
                   <NavLink to={item.to} end={item.to === '/'}>
                     {({ isActive }) => (
@@ -143,7 +131,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         <SidebarGroup style={{ marginTop: 'auto', borderTop: '1px solid var(--border-subtle)', paddingTop: '8px' }}>
           <SidebarGroupContent>
             <SidebarMenu>
-              {bottomNavItems.map((item) => (
+              {BOTTOM_NAV_ITEMS.map((item) => (
                 <SidebarMenuItem key={item.to} style={{ marginBottom: '5px' }}>
                   <NavLink to={item.to}>
                     {({ isActive }) => (
