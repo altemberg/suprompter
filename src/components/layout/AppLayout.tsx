@@ -1,23 +1,16 @@
 import { useState } from 'react'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { Menu, Home, FileText, Video, Mic, Settings, MoreHorizontal, User, HelpCircle, LogOut } from 'lucide-react'
+import { Menu, Video, MoreHorizontal, User, HelpCircle, LogOut } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { AppSidebar } from './AppSidebar'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from './nav-config'
 
 interface AppLayoutProps {
   children: React.ReactNode
 }
-
-const navItems = [
-  { label: 'Início', icon: Home, to: '/' },
-  { label: 'Roteiros', icon: FileText, to: '/roteiros' },
-  { label: 'Teleprompter', icon: Video, to: '/teleprompter' },
-  { label: 'Transcritor', icon: Mic, to: '/transcritor' },
-  { label: 'Gravações', icon: Video, to: '/gravacoes' },
-]
 
 function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, signOut } = useAuthStore()
@@ -58,7 +51,7 @@ function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => void })
 
         {/* Nav items */}
         <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
-          {navItems.map((item) => (
+          {NAV_ITEMS.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === '/'} style={{ textDecoration: 'none' }}>
               {({ isActive }) => (
                 <button
@@ -84,31 +77,33 @@ function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => void })
             </NavLink>
           ))}
 
-          {/* Configurações separado */}
+          {/* Bottom nav (Configurações, etc.) */}
           <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '8px', paddingTop: '8px' }}>
-            <NavLink to="/configuracoes" style={{ textDecoration: 'none' }}>
-              {({ isActive }) => (
-                <button
-                  onClick={() => handleNavigate('/configuracoes')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '9px',
-                    width: '100%', padding: '8px 12px',
-                    borderRadius: 'var(--radius-md)', border: 'none', cursor: 'pointer',
-                    fontSize: '14px', fontWeight: isActive ? 500 : 400,
-                    color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-                    background: isActive ? 'var(--bg-active)' : 'transparent',
-                    textAlign: 'left', fontFamily: 'var(--font-sans)',
-                  }}
-                >
-                  <Settings
-                    size={15}
-                    strokeWidth={1.8}
-                    style={{ flexShrink: 0, color: isActive ? 'var(--accent-light)' : 'currentColor' }}
-                  />
-                  Configurações
-                </button>
-              )}
-            </NavLink>
+            {BOTTOM_NAV_ITEMS.map((item) => (
+              <NavLink key={item.to} to={item.to} style={{ textDecoration: 'none' }}>
+                {({ isActive }) => (
+                  <button
+                    onClick={() => handleNavigate(item.to)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '9px',
+                      width: '100%', padding: '8px 12px', marginBottom: '4px',
+                      borderRadius: 'var(--radius-md)', border: 'none', cursor: 'pointer',
+                      fontSize: '14px', fontWeight: isActive ? 500 : 400,
+                      color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                      background: isActive ? 'var(--bg-active)' : 'transparent',
+                      textAlign: 'left', fontFamily: 'var(--font-sans)',
+                    }}
+                  >
+                    <item.icon
+                      size={15}
+                      strokeWidth={1.8}
+                      style={{ flexShrink: 0, color: isActive ? 'var(--accent-light)' : 'currentColor' }}
+                    />
+                    {item.label}
+                  </button>
+                )}
+              </NavLink>
+            ))}
           </div>
         </nav>
 
