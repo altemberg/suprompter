@@ -43,8 +43,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Drawer */}
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <SheetContent side="left" style={{ padding: 0, width: '260px', background: 'var(--bg-sidebar)', border: 'none' }}>
-            <SidebarInner onNavigate={() => setDrawerOpen(false)} />
+          <SheetContent side="left" style={{ padding: 0, width: '260px', background: 'var(--bg-sidebar)', border: 'none', height: '100dvh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <SidebarInner onNavigate={() => setDrawerOpen(false)} />
+            </div>
           </SheetContent>
         </Sheet>
 
