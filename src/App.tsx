@@ -4,7 +4,6 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { useUserSettingsStore } from '@/stores/useUserSettingsStore'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
-import { AdminRoute } from '@/components/AdminRoute'
 
 import { Login } from '@/pages/Login'
 import { AuthCallback } from '@/pages/AuthCallback'
@@ -130,16 +129,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/superadmin"
-        element={
-          <AdminRoute>
-            <AppLayout>
-              <AdminPage />
-            </AppLayout>
-          </AdminRoute>
-        }
-      />
+      {/* Superadmin — tela dedicada, login próprio, sem sidebar/layout comum */}
+      <Route path="/superadmin" element={<AdminPage />} />
     </Routes>
   )
 }

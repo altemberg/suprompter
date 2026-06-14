@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Plus, X, KeyRound, Power, Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { Plus, X, KeyRound, Power, Eye, EyeOff, ShieldCheck, Lock, LogOut } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/useAuthStore'
 import {
+  isAdmin,
   adminListUsers,
   adminCreateUser,
   adminSetStatus,
@@ -48,7 +51,163 @@ const ghostBtn: React.CSSProperties = {
   cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'border-color 0.15s',
 }
 
+/* ──────────────────────────────────────────────────────────────
+   Gate: decide entre tela de login dedicada e o painel.
+   Rota /superadmin é isolada — sem sidebar/layout de usuário comum.
+   ────────────────────────────────────────────────────────────── */
 export function AdminPage() {
+  const { user, loading } = useAuthStore()
+  const signOut = useAuthStore(s => s.signOut)
+
+  if (loading) {
+    return (
+      <FullScreen>
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Carregando...</p>
+      </FullScreen>
+    )
+  }
+
+  if (!isAdmin(user)) {
+    return <SuperadminLogin loggedAsOther={!!user} onSignOut={signOut} />
+  }
+
+  return <AdminPanel onSignOut={signOut} />
+}
+
+function FullScreen({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      minHeight: '100dvh', width: '100%',
+      background: 'var(--bg-page)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '24px',
+    }}>
+      {children}
+    </div>
+  )
+}
+
+/* ── Tela de login dedicada do superadmin ── */
+function SuperadminLogin({ loggedAsOther, onSignOut }: { loggedAsOther: boolean; onSignOut: () => void }) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPwd, setShowPwd] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [err, setErr] = useState('')
+
+  const canSubmit = email.trim() && password && !submitting
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    if (!canSubmit) return
+    setSubmitting(true)
+    setErr('')
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
+    if (error) {
+      setErr('Email ou senha inválidos.')
+      setSubmitting(false)
+      return
+    }
+    if (!isAdmin(data.user)) {
+      setErr('Esta conta não tem permissão de superadmin.')
+      await supabase.auth.signOut()
+      setSubmitting(false)
+      return
+    }
+    // Sucesso: o onAuthStateChange atualiza o store e o gate renderiza o painel.
+  }
+
+  return (
+    <FullScreen>
+      <div style={{ width: '100%', maxWidth: '360px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '28px' }}>
+          <div style={{
+            width: '48px', height: '48px', borderRadius: '12px',
+            background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px',
+          }}>
+            <Lock size={20} style={{ color: 'var(--accent-light)' }} />
+          </div>
+          <h1 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
+            Painel Superadmin
+          </h1>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px', textAlign: 'center' }}>
+            Acesso restrito. Entre com as credenciais de administrador.
+          </p>
+        </div>
+
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <p style={labelStyle}>Email</p>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="admin@exemplo.com"
+              autoFocus
+              style={inputStyle}
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--border-muted)'}
+              onBlur={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
+            />
+          </div>
+          <div>
+            <p style={labelStyle}>Senha</p>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPwd ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{ ...inputStyle, paddingRight: '38px' }}
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--border-muted)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd(p => !p)}
+                style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-disabled)', display: 'flex' }}
+              >
+                {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+          </div>
+
+          {err && <p style={{ fontSize: '12px', color: 'var(--red)' }}>{err}</p>}
+
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            style={{ ...primaryBtn(!canSubmit), padding: '10px 16px', marginTop: '4px' }}
+            onMouseEnter={e => { if (canSubmit) e.currentTarget.style.background = 'var(--btn-primary-hover)' }}
+            onMouseLeave={e => { if (canSubmit) e.currentTarget.style.background = 'var(--btn-primary)' }}
+          >
+            {submitting ? 'Entrando...' : 'Entrar'}
+          </button>
+        </form>
+
+        {loggedAsOther && (
+          <p style={{ fontSize: '12px', color: 'var(--text-disabled)', textAlign: 'center', marginTop: '18px' }}>
+            Você está logado em outra conta.{' '}
+            <button
+              onClick={onSignOut}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-light)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '12px' }}
+            >
+              Sair dela
+            </button>
+          </p>
+        )}
+      </div>
+    </FullScreen>
+  )
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Painel de superadmin (só renderiza quando autenticado como admin)
+   ────────────────────────────────────────────────────────────── */
+function AdminPanel({ onSignOut }: { onSignOut: () => void }) {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -83,8 +242,8 @@ export function AdminPage() {
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', height: '100%', background: 'var(--bg-page)', width: '100%', overflowY: 'auto' }}>
-      <div style={{ width: '88%', maxWidth: '1100px', padding: '56px 0 80px' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg-page)', display: 'flex', justifyContent: 'center', width: '100%', overflowY: 'auto' }}>
+      <div style={{ width: '88%', maxWidth: '1100px', padding: '40px 0 80px' }}>
 
         {/* Cabeçalho */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -95,20 +254,30 @@ export function AdminPage() {
               color: 'var(--text-primary)', letterSpacing: '-0.5px',
             }}>
               <ShieldCheck size={22} style={{ color: 'var(--accent-light)' }} />
-              Administração
+              Painel Superadmin
             </h1>
             <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '6px' }}>
               Gerencie os membros da plataforma, status de acesso e API keys.
             </p>
           </div>
-          <button
-            onClick={() => setCreateOpen(true)}
-            style={primaryBtn()}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--btn-primary-hover)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--btn-primary)'}
-          >
-            <Plus size={15} /> Adicionar membro
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={onSignOut}
+              style={ghostBtn}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-muted)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
+            >
+              <LogOut size={13} /> Sair
+            </button>
+            <button
+              onClick={() => setCreateOpen(true)}
+              style={primaryBtn()}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--btn-primary-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--btn-primary)'}
+            >
+              <Plus size={15} /> Adicionar membro
+            </button>
+          </div>
         </div>
 
         <hr style={{ border: 'none', borderBottom: '1px solid var(--border-subtle)', margin: '24px 0' }} />
@@ -299,6 +468,7 @@ function CreateMemberModal({ onClose, onCreated }: { onClose: () => void; onCrea
               onBlur={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
             />
             <button
+              type="button"
               onClick={() => setShowPwd(p => !p)}
               style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-disabled)', display: 'flex' }}
             >
@@ -365,6 +535,7 @@ function ApiKeyModal({ user, onClose, onSaved }: { user: AdminUser; onClose: () 
           onBlur={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
         />
         <button
+          type="button"
           onClick={() => setShowKey(p => !p)}
           style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-disabled)', display: 'flex' }}
         >
