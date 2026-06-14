@@ -9,8 +9,14 @@ import {
   adminSetStatus,
   adminSetApiKey,
   DEFAULT_PASSWORD,
+  PROVIDERS,
   type AdminUser,
+  type Provider,
 } from '@/lib/admin'
+
+function providerLabel(p: Provider | null): string {
+  return PROVIDERS.find(x => x.value === p)?.label ?? ''
+}
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -355,7 +361,7 @@ function AdminPanel({ onSignOut }: { onSignOut: () => void }) {
                 </span>
               </span>
               <span style={{ fontSize: '12px', color: u.api_key ? 'var(--teal-light)' : 'var(--text-disabled)' }}>
-                {u.api_key ? 'Configurada' : 'Não definida'}
+                {u.api_key ? (providerLabel(u.provider) || 'Configurada') : 'Não definida'}
               </span>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button
@@ -396,8 +402,8 @@ function AdminPanel({ onSignOut }: { onSignOut: () => void }) {
         <ApiKeyModal
           user={keyTarget}
           onClose={() => setKeyTarget(null)}
-          onSaved={(key) => {
-            setUsers(prev => prev.map(x => x.id === keyTarget.id ? { ...x, api_key: key || null } : x))
+          onSaved={(provider, key) => {
+            setUsers(prev => prev.map(x => x.id === keyTarget.id ? { ...x, provider, api_key: key || null } : x))
             setKeyTarget(null)
           }}
         />
@@ -500,18 +506,23 @@ function CreateMemberModal({ onClose, onCreated }: { onClose: () => void; onCrea
 }
 
 /* ── Modal: API Key ── */
-function ApiKeyModal({ user, onClose, onSaved }: { user: AdminUser; onClose: () => void; onSaved: (key: string) => void }) {
+function ApiKeyModal({ user, onClose, onSaved }: { user: AdminUser; onClose: () => void; onSaved: (provider: Provider, key: string) => void }) {
+  const [provider, setProvider] = useState<Provider | ''>(user.provider ?? '')
   const [key, setKey] = useState(user.api_key ?? '')
   const [showKey, setShowKey] = useState(false)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
 
+  const meta = PROVIDERS.find(p => p.value === provider)
+  const canSave = !!provider && key.trim().length > 0 && !saving
+
   async function handleSave() {
+    if (!provider || !key.trim()) return
     setSaving(true)
     setErr('')
     try {
-      await adminSetApiKey(user.id, key.trim())
-      onSaved(key.trim())
+      await adminSetApiKey(user.id, provider, key.trim())
+      onSaved(provider, key.trim())
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erro ao salvar API key.')
       setSaving(false)
@@ -520,28 +531,69 @@ function ApiKeyModal({ user, onClose, onSaved }: { user: AdminUser; onClose: () 
 
   return (
     <ModalShell title="API Key do membro" onClose={onClose}>
-      <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>
-        Chave usada por <strong style={{ color: 'var(--text-secondary)' }}>{user.email}</strong> para gerar roteiros e transcrever (OpenRouter).
+      <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+        Chave usada por <strong style={{ color: 'var(--text-secondary)' }}>{user.email}</strong> para gerar roteiros e transcrever.
       </p>
-      <p style={labelStyle}>OpenRouter API Key</p>
-      <div style={{ position: 'relative' }}>
-        <input
-          type={showKey ? 'text' : 'password'}
-          value={key}
-          onChange={e => setKey(e.target.value)}
-          placeholder="sk-or-v1-..."
-          style={{ ...inputStyle, paddingRight: '38px' }}
-          onFocus={e => e.currentTarget.style.borderColor = 'var(--border-muted)'}
-          onBlur={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
-        />
-        <button
-          type="button"
-          onClick={() => setShowKey(p => !p)}
-          style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-disabled)', display: 'flex' }}
-        >
-          {showKey ? <EyeOff size={15} /> : <Eye size={15} />}
-        </button>
+
+      {/* Provedor */}
+      <p style={labelStyle}>Provedor de IA</p>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '18px' }}>
+        {PROVIDERS.map(p => {
+          const active = provider === p.value
+          return (
+            <button
+              key={p.value}
+              type="button"
+              onClick={() => { setProvider(p.value); if (p.value !== user.provider) setKey('') }}
+              style={{
+                flex: 1, padding: '9px 8px', fontSize: '12px', fontWeight: 500,
+                borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                fontFamily: 'var(--font-sans)', transition: 'all 0.15s',
+                background: active ? 'var(--accent-bg)' : 'transparent',
+                border: `1px solid ${active ? 'var(--accent-border)' : 'var(--border-subtle)'}`,
+                color: active ? 'var(--accent-light)' : 'var(--text-muted)',
+              }}
+            >
+              {p.label}
+            </button>
+          )
+        })}
       </div>
+
+      {/* Input só aparece após escolher o provedor */}
+      {provider ? (
+        <>
+          <p style={labelStyle}>{meta?.label} API Key</p>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showKey ? 'text' : 'password'}
+              value={key}
+              onChange={e => setKey(e.target.value)}
+              placeholder={meta?.placeholder}
+              autoFocus
+              style={{ ...inputStyle, paddingRight: '38px' }}
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--border-muted)'}
+              onBlur={e => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
+            />
+            <button
+              type="button"
+              onClick={() => setShowKey(p => !p)}
+              style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-disabled)', display: 'flex' }}
+            >
+              {showKey ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+          {meta && !meta.transcription && (
+            <p style={{ fontSize: '11px', color: 'var(--text-disabled)', marginTop: '8px', lineHeight: 1.5 }}>
+              ⚠️ O Claude não transcreve áudio — com este provedor o Transcritor fica indisponível para este usuário.
+            </p>
+          )}
+        </>
+      ) : (
+        <p style={{ fontSize: '12px', color: 'var(--text-disabled)' }}>
+          Escolha um provedor para inserir a chave.
+        </p>
+      )}
 
       {err && <p style={{ fontSize: '12px', color: 'var(--red)', marginTop: '10px' }}>{err}</p>}
 
@@ -549,10 +601,10 @@ function ApiKeyModal({ user, onClose, onSaved }: { user: AdminUser; onClose: () 
         <button onClick={onClose} style={ghostBtn}>Cancelar</button>
         <button
           onClick={handleSave}
-          disabled={saving}
-          style={primaryBtn(saving)}
-          onMouseEnter={e => { if (!saving) e.currentTarget.style.background = 'var(--btn-primary-hover)' }}
-          onMouseLeave={e => { if (!saving) e.currentTarget.style.background = 'var(--btn-primary)' }}
+          disabled={!canSave}
+          style={primaryBtn(!canSave)}
+          onMouseEnter={e => { if (canSave) e.currentTarget.style.background = 'var(--btn-primary-hover)' }}
+          onMouseLeave={e => { if (canSave) e.currentTarget.style.background = 'var(--btn-primary)' }}
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>

@@ -11,12 +11,26 @@ export function isAdmin(user: User | null | undefined): boolean {
   return !!user?.email && user.email.toLowerCase() === ADMIN_EMAIL
 }
 
+export type Provider = 'openai' | 'anthropic' | 'openrouter'
+
+export const PROVIDERS: {
+  value: Provider
+  label: string
+  placeholder: string
+  transcription: boolean
+}[] = [
+  { value: 'openrouter', label: 'OpenRouter', placeholder: 'sk-or-v1-...', transcription: true },
+  { value: 'openai', label: 'OpenAI', placeholder: 'sk-...', transcription: true },
+  { value: 'anthropic', label: 'Claude (Anthropic)', placeholder: 'sk-ant-...', transcription: false },
+]
+
 export interface AdminUser {
   id: string
   email: string
   name: string
   created_at: string
   disabled: boolean
+  provider: Provider | null
   api_key: string | null
 }
 
@@ -56,6 +70,6 @@ export function adminSetStatus(userId: string, disabled: boolean): Promise<unkno
   return callAdmin('set_status', { user_id: userId, disabled })
 }
 
-export function adminSetApiKey(userId: string, apiKey: string): Promise<unknown> {
-  return callAdmin('set_api_key', { user_id: userId, api_key: apiKey })
+export function adminSetApiKey(userId: string, provider: Provider, apiKey: string): Promise<unknown> {
+  return callAdmin('set_api_key', { user_id: userId, provider, api_key: apiKey })
 }

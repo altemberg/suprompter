@@ -1,4 +1,4 @@
-import { getActiveApiKey } from '@/stores/useUserSettingsStore'
+import { getActiveApiKey, getActiveProvider } from '@/stores/useUserSettingsStore'
 
 export interface TranscriptionResult {
   text: string
@@ -52,6 +52,15 @@ export async function transcribeAudio(
   const apiKey = getActiveApiKey()
   if (!apiKey) throw new Error('API key não configurada. Peça ao admin para configurar a chave da sua conta.')
 
+  const provider = getActiveProvider()
+  if (provider === 'anthropic') {
+    throw new Error('O Claude (Anthropic) não suporta transcrição de áudio. Peça ao admin para usar OpenAI ou OpenRouter para transcrever.')
+  }
+  const transcribeUrl = provider === 'openai'
+    ? 'https://api.openai.com/v1/audio/transcriptions'
+    : 'https://openrouter.ai/api/v1/audio/transcriptions'
+  const whisperModel = provider === 'openai' ? 'whisper-1' : 'openai/whisper-1'
+
   onProgress?.('Preparando arquivo...')
 
   // Whisper aceita: mp4, webm, mp3, wav, m4a, ogg — máximo 25MB
@@ -62,14 +71,14 @@ export async function transcribeAudio(
 
   const formData = new FormData()
   formData.append('file', file, file.name)
-  formData.append('model', 'openai/whisper-1')
+  formData.append('model', whisperModel)
   formData.append('language', 'pt')
   formData.append('response_format', 'verbose_json')
   formData.append('timestamp_granularities[]', 'segment')
 
   onProgress?.('Transcrevendo...')
 
-  const response = await fetch('https://openrouter.ai/api/v1/audio/transcriptions', {
+  const response = await fetch(transcribeUrl, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,

@@ -1,8 +1,13 @@
 import type { Format } from '@/types'
-import { getActiveApiKey } from '@/stores/useUserSettingsStore'
+import type { Provider } from '@/lib/admin'
+import { getActiveApiKey, getActiveProvider } from '@/stores/useUserSettingsStore'
 
-const BASE_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const MODEL = 'anthropic/claude-sonnet-4-5'
+// Modelo de chat por provedor.
+const CHAT_MODEL: Record<Provider, string> = {
+  openrouter: 'anthropic/claude-sonnet-4-5',
+  openai: 'gpt-4o',
+  anthropic: 'claude-sonnet-4-6',
+}
 
 function getApiKey(): string {
   const key = getActiveApiKey()
@@ -41,30 +46,53 @@ Retorne APENAS neste formato, sem texto antes ou depois:
 
 O roteiro deve soar natural para ser lido no teleprompter.`
 
-async function streamOpenRouter(
+// Despacha para o provedor configurado na conta do usuário.
+async function streamChat(
   messages: { role: string; content: string }[],
   onChunk: (text: string) => void,
   maxTokens = 1024,
 ): Promise<void> {
-  const response = await fetch(BASE_URL, {
+  const provider = getActiveProvider()
+  const apiKey = getApiKey()
+  if (provider === 'anthropic') {
+    return streamAnthropic(apiKey, messages, onChunk, maxTokens)
+  }
+  return streamOpenAICompatible(provider, apiKey, messages, onChunk, maxTokens)
+}
+
+// OpenAI e OpenRouter compartilham o formato /chat/completions.
+async function streamOpenAICompatible(
+  provider: Provider,
+  apiKey: string,
+  messages: { role: string; content: string }[],
+  onChunk: (text: string) => void,
+  maxTokens: number,
+): Promise<void> {
+  const baseUrl = provider === 'openai'
+    ? 'https://api.openai.com/v1/chat/completions'
+    : 'https://openrouter.ai/api/v1/chat/completions'
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${apiKey}`,
+  }
+  if (provider === 'openrouter') headers['HTTP-Referer'] = window.location.origin
+
+  const response = await fetch(baseUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getApiKey()}`,
-      'HTTP-Referer': window.location.origin,
-    },
+    headers,
     body: JSON.stringify({
-      model: MODEL,
+      model: CHAT_MODEL[provider],
       max_tokens: maxTokens,
       stream: true,
-      system: SYSTEM_PROMPT,
-      messages,
+      // O system prompt entra como mensagem de sistema (padrão OpenAI).
+      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
     }),
   })
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: { message: 'Erro desconhecido' } }))
-    throw new Error(error.error?.message ?? `Erro na API OpenRouter (${response.status})`)
+    throw new Error(error.error?.message ?? `Erro na API (${response.status})`)
   }
 
   const reader = response.body!.getReader()
@@ -74,9 +102,7 @@ async function streamOpenRouter(
     const { done, value } = await reader.read()
     if (done) break
 
-    const chunk = decoder.decode(value)
-    const lines = chunk.split('\n')
-
+    const lines = decoder.decode(value).split('\n')
     for (const line of lines) {
       if (!line.startsWith('data: ')) continue
       const data = line.slice(6).trim()
@@ -85,6 +111,60 @@ async function streamOpenRouter(
         const parsed = JSON.parse(data)
         const text = parsed.choices?.[0]?.delta?.content
         if (text) onChunk(text)
+      } catch {
+        // ignora erros de parse
+      }
+    }
+  }
+}
+
+// API direta da Anthropic — Messages API (formato e streaming diferentes).
+async function streamAnthropic(
+  apiKey: string,
+  messages: { role: string; content: string }[],
+  onChunk: (text: string) => void,
+  maxTokens: number,
+): Promise<void> {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      // Necessário para chamar a API da Anthropic direto do browser.
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: CHAT_MODEL.anthropic,
+      max_tokens: maxTokens,
+      stream: true,
+      system: SYSTEM_PROMPT,
+      messages,
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: { message: 'Erro desconhecido' } }))
+    throw new Error(error.error?.message ?? `Erro na API Anthropic (${response.status})`)
+  }
+
+  const reader = response.body!.getReader()
+  const decoder = new TextDecoder()
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    const lines = decoder.decode(value).split('\n')
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue
+      const data = line.slice(6).trim()
+      try {
+        const parsed = JSON.parse(data)
+        // Eventos de texto: content_block_delta com delta.type === 'text_delta'.
+        if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+          onChunk(parsed.delta.text)
+        }
       } catch {
         // ignora erros de parse
       }
@@ -102,7 +182,7 @@ export async function generateScript(params: {
   const formatLabel = params.format === 'reels' ? 'Reels/Stories (vertical)' : 'YouTube (horizontal)'
   const durationLabel = params.duration < 60 ? `${params.duration} segundos` : `${params.duration / 60} minutos`
 
-  await streamOpenRouter([{
+  await streamChat([{
     role: 'user',
     content: `Crie um roteiro para vídeo com as seguintes características:
 - Tema: ${params.topic}
@@ -119,7 +199,7 @@ export async function improveScript(params: {
   currentScript: string
   instruction: string
 }, onChunk: (text: string) => void): Promise<void> {
-  await streamOpenRouter([{
+  await streamChat([{
     role: 'user',
     content: `Melhore o seguinte roteiro conforme a instrução abaixo:
 
@@ -143,7 +223,7 @@ export async function applyHookOrCTA(params: {
     ? 'substitua ou reescreva o início do roteiro usando este gancho, mantendo o restante do conteúdo'
     : 'substitua ou reescreva o final do roteiro usando este CTA, mantendo o restante do conteúdo'
 
-  await streamOpenRouter([{
+  await streamChat([{
     role: 'user',
     content: `Você vai incorporar um ${typeLabel} ao roteiro abaixo de forma natural e coesa.
 
@@ -302,7 +382,7 @@ export async function generateScriptFromContext(params: {
     ? parts.join('\n\n---\n\n') + '\n\nGere o roteiro agora.'
     : 'Gere um roteiro com base no formato e objetivo definidos.'
 
-  await streamOpenRouter(
+  await streamChat(
     [{ role: 'user', content: `${systemPrompt}\n\n${userMessage}` }],
     onChunk,
     3000,
@@ -326,7 +406,7 @@ export async function suggestHooksAndCTAs(params: {
 }, onChunk: (text: string) => void): Promise<void> {
   const formatLabel = params.format === 'reels' ? 'Reels/Stories' : 'YouTube'
 
-  await streamOpenRouter([{
+  await streamChat([{
     role: 'user',
     content: `Com base no roteiro abaixo para ${formatLabel}, sugira exatamente 3 ganchos de abertura e 3 CTAs (chamadas para ação) de fechamento.
 

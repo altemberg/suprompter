@@ -6,9 +6,13 @@
 create table if not exists public.user_settings (
   user_id    uuid primary key references auth.users(id) on delete cascade,
   api_key    text,
+  provider   text default 'openrouter',  -- 'openai' | 'anthropic' | 'openrouter'
   disabled   boolean default false,
   updated_at timestamptz default now()
 );
+
+-- Para tabelas já criadas antes desta coluna existir:
+alter table public.user_settings add column if not exists provider text default 'openrouter';
 
 alter table public.user_settings enable row level security;
 

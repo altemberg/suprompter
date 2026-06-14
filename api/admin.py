@@ -65,7 +65,7 @@ def fetch_settings_map():
     status, data = _request(
         "GET",
         "/rest/v1/user_settings",
-        params={"select": "user_id,api_key,disabled"},
+        params={"select": "user_id,api_key,provider,disabled"},
     )
     result = {}
     if status == 200 and isinstance(data, list):
@@ -104,6 +104,7 @@ def action_list_users():
             "name": (u.get("user_metadata") or {}).get("name") or "",
             "created_at": u.get("created_at"),
             "disabled": bool(u.get("banned_until")),
+            "provider": s.get("provider"),
             "api_key": s.get("api_key"),
         })
     return 200, {"users": out}
@@ -143,10 +144,16 @@ def action_set_status(payload):
 def action_set_api_key(payload):
     user_id = payload.get("user_id")
     api_key = payload.get("api_key")
+    provider = payload.get("provider")
     if not user_id:
         return 400, {"error": "user_id é obrigatório."}
+    if provider not in ("openai", "anthropic", "openrouter"):
+        return 400, {"error": "Provedor inválido."}
 
-    status, data = upsert_settings(user_id, {"api_key": (api_key or "").strip() or None})
+    status, data = upsert_settings(user_id, {
+        "provider": provider,
+        "api_key": (api_key or "").strip() or None,
+    })
     if status in (200, 201, 204):
         return 200, {"ok": True}
     return status, (data or {"error": "Falha ao salvar a API key."})
