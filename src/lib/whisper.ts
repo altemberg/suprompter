@@ -1,4 +1,4 @@
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY as string
+import { getActiveApiKey } from '@/stores/useUserSettingsStore'
 
 export interface TranscriptionResult {
   text: string
@@ -49,7 +49,8 @@ export async function transcribeAudio(
   file: File,
   onProgress?: (stage: string) => void
 ): Promise<TranscriptionResult> {
-  if (!OPENROUTER_API_KEY) throw new Error('VITE_OPENROUTER_API_KEY não configurada no .env')
+  const apiKey = getActiveApiKey()
+  if (!apiKey) throw new Error('API key não configurada. Peça ao admin para configurar a chave da sua conta.')
 
   onProgress?.('Preparando arquivo...')
 
@@ -71,7 +72,7 @@ export async function transcribeAudio(
   const response = await fetch('https://openrouter.ai/api/v1/audio/transcriptions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'Authorization': `Bearer ${apiKey}`,
       'HTTP-Referer': window.location.origin,
       'X-Title': 'Opinify',
     },

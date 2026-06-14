@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { useUserSettingsStore } from '@/stores/useUserSettingsStore'
 
 interface AuthStore {
   user: User | null
@@ -24,6 +25,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
   signOut: async () => {
     await supabase.auth.signOut()
+    useUserSettingsStore.getState().clear()
     set({ user: null })
   },
 }))

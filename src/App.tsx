@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useUserSettingsStore } from '@/stores/useUserSettingsStore'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { AdminRoute } from '@/components/AdminRoute'
 
 import { Login } from '@/pages/Login'
 import { AuthCallback } from '@/pages/AuthCallback'
@@ -15,13 +17,19 @@ import { Recordings } from '@/pages/Recordings'
 import { SettingsPage } from '@/pages/Settings'
 import { Transcriber } from '@/pages/Transcriber'
 import { ImportScript } from '@/pages/ImportScript'
+import { AdminPage } from '@/pages/Admin'
 
 function AppRoutes() {
-  const { initialize } = useAuthStore()
+  const { initialize, user } = useAuthStore()
+  const loadApiKey = useUserSettingsStore(s => s.loadApiKey)
 
   useEffect(() => {
     initialize()
   }, [initialize])
+
+  useEffect(() => {
+    if (user) loadApiKey()
+  }, [user, loadApiKey])
 
   return (
     <Routes>
@@ -120,6 +128,16 @@ function AppRoutes() {
               <SettingsPage />
             </AppLayout>
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin"
+        element={
+          <AdminRoute>
+            <AppLayout>
+              <AdminPage />
+            </AppLayout>
+          </AdminRoute>
         }
       />
     </Routes>

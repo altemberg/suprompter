@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FlaskConical, ArrowLeft } from 'lucide-react'
+import { getActiveApiKey } from '@/stores/useUserSettingsStore'
 import { useCamera } from '@/hooks/useCamera'
 import { useMediaRecorder } from '@/hooks/useMediaRecorder'
 import { useTeleprompter } from '@/hooks/useTeleprompter'
@@ -22,7 +23,7 @@ function getTemAleatorio() {
 }
 
 async function gerarRoteiroTeste(): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY ?? import.meta.env.OPENROUTER_API_KEY
+  const apiKey = getActiveApiKey()
   if (!apiKey) throw new Error('OpenRouter API Key não configurada')
 
   const tema = getTemAleatorio()

@@ -1,11 +1,12 @@
 import type { Format } from '@/types'
+import { getActiveApiKey } from '@/stores/useUserSettingsStore'
 
 const BASE_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const MODEL = 'anthropic/claude-sonnet-4-5'
 
 function getApiKey(): string {
-  const key = import.meta.env.OPENROUTER_API_KEY ?? import.meta.env.VITE_OPENROUTER_API_KEY
-  if (!key) throw new Error('OpenRouter API key não configurada no .env')
+  const key = getActiveApiKey()
+  if (!key) throw new Error('API key não configurada. Peça ao admin para configurar a chave da sua conta.')
   return key
 }
 
